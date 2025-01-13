@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 import 'package:gehnaorg/features/add_product/data/models/login.dart';
 
@@ -9,15 +11,19 @@ class LoginApi {
   Future<Login> login(String email, String password) async {
     try {
       final response = await dio.post(
-        'http://3.110.34.172:8080/admin/login',
+        'https://admin-service-254137058023.asia-south1.run.app/admin/auth/login',
         data: {
           "email": email,
           "password": password,
         },
+        options: Options(
+          contentType: 'application/json'
+        )
       );
       if (response.statusCode == 200) {
         final login = Login.fromJson(response.data);
         print('Login successful! Token: ${login.token}');
+        print('identity:${login.identity}');
         return login;
       } else {
         throw Exception('Failed to login');

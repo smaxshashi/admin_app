@@ -4,7 +4,7 @@ class Login {
   String email;
   String token;
   String identity;
-  dynamic adminDetail;
+  int adminId;
 
   Login({
     required this.message,
@@ -12,7 +12,7 @@ class Login {
     required this.email,
     required this.token,
     required this.identity,
-    required this.adminDetail,
+    required this.adminId,
   });
 
   factory Login.fromJson(Map<String, dynamic> json) {
@@ -22,7 +22,7 @@ class Login {
       email: json['email'],
       token: json['token'],
       identity: json['identity'],
-      adminDetail: json['adminDetail'],
+      adminId: json['adminId'],
     );
   }
 }
