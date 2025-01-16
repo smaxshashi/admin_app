@@ -65,7 +65,7 @@ class _PricesPageState extends State<PricesPage> {
         _isChanged = false;
       });
     } else {
-      print('Some prices failed to update.');
+      print('Some prices failed to update');
     }
   }
 
