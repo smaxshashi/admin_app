@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:gehnaorg/features/add_product/data/models/subcategory.dart';
 
 class SubCategoryRepository {
@@ -7,29 +8,39 @@ class SubCategoryRepository {
   SubCategoryRepository(this.dio);
 
   Future<List<SubCategory>> fetchSubCategories({
-    required int categoryCode,
-    required String wholeseller,
-    required int? genderCode, // Make genderCode nullable
+    required int categoryId,
+    required String? gender, // Changed from int? to String?
   }) async {
     try {
-      // Check if genderCode is null and adjust accordingly
+      // Fetch wholesalerId from SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      final wholesalerId =
+          prefs.getInt('wholesalerId'); // Assumes it's stored as an int
+
+      if (wholesalerId == null) {
+        throw Exception('Wholesaler ID not found in SharedPreferences');
+      }
+
+      // Construct the API URL
+      final apiUrl =
+          'https://upload-service-254137058023.asia-south1.run.app/upload/$wholesalerId/getSubCategories/$categoryId';
+
+      // Build query parameters
       final queryParams = {
-        'wholeseller': wholeseller,
-        if (genderCode != null)
-          'genderCode': genderCode, // Only add genderCode if it's not null
+        if (gender != null) 'gender': gender, // Pass gender as String
       };
 
-      final response = await dio.get(
-        'http://3.110.34.172:8080/api/subCategories/$categoryCode',
-        queryParameters: queryParams,
-      );
+      // Make the API request
+      final response = await dio.get(apiUrl, queryParameters: queryParams);
 
       if (response.statusCode == 200) {
+        // Map response data to SubCategory model
         return (response.data as List)
             .map((json) => SubCategory.fromJson(json))
             .toList();
       } else {
-        throw Exception('Failed to fetch subcategories');
+        throw Exception(
+            'Failed to fetch subcategories. Status code: ${response.statusCode}');
       }
     } catch (e) {
       throw Exception('Error fetching subcategories: $e');

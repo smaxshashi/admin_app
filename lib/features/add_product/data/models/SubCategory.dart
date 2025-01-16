@@ -1,121 +1,114 @@
-import 'package:equatable/equatable.dart';
+import 'dart:convert';
 
-enum Description {
-  GOLD_FEMALE_SUBCATEGORY,
-  GOLD_MENS_SUBCATEGORY;
+List<SubCategory> subCategoryFromJson(String str) => List<SubCategory>.from(
+    json.decode(str).map((x) => SubCategory.fromJson(x)));
 
-  factory Description.fromJson(String json) => Description.values.firstWhere(
-      (e) => e.toString().split('.').last == json,
-      orElse: () => Description
-          .GOLD_FEMALE_SUBCATEGORY); // Defaulting to GOLD_FEMALE_SUBCATEGORY if not found
+String subCategoryToJson(List<SubCategory> data) =>
+    json.encode(List<dynamic>.from(data.map((x) => x.toJson())));
 
-  String toJson() => toString().split('.').last;
-}
+class SubCategory {
+  final int subcategoryId;
+  final String subCategoryName;
+  final int categoryId;
+  final dynamic categoryName;
+  final String description;
+  final int price;
+  final dynamic exfield1;
+  final dynamic exfield2;
+  final String gender;
+  final dynamic imageUrl;
+  final DateTime createDate;
+  final DateTime modiDate;
+  final String wholesalerName;
+  final int wholesalerId;
+  final dynamic subCategoryType;
 
-enum Gender {
-  MEN,
-  WOMEN;
-
-  factory Gender.fromJson(String json) =>
-      Gender.values.firstWhere((e) => e.toString().split('.').last == json,
-          orElse: () => Gender.MEN); // Defaulting to MEN
-
-  String toJson() => toString().split('.').last;
-}
-
-enum Wholeseller {
-  BANSAL;
-
-  factory Wholeseller.fromJson(String json) =>
-      Wholeseller.values.firstWhere((e) => e.toString().split('.').last == json,
-          orElse: () => Wholeseller.BANSAL); // Defaulting to BANSAL
-
-  String toJson() => toString().split('.').last;
-}
-
-class SubCategory extends Equatable {
-  const SubCategory({
+  SubCategory({
     required this.subcategoryId,
-    required this.subcategoryName,
-    required this.subcategoryCode,
-    required this.categoryCode,
+    required this.subCategoryName,
+    required this.categoryId,
+    required this.categoryName,
     required this.description,
     required this.price,
     required this.exfield1,
-    this.exfield2,
+    required this.exfield2,
     required this.gender,
-    required this.genderCode,
+    required this.imageUrl,
     required this.createDate,
     required this.modiDate,
-    required this.wholeseller,
+    required this.wholesalerName,
+    required this.wholesalerId,
+    required this.subCategoryType,
   });
 
-  // Factory constructor for JSON deserialization
-  factory SubCategory.fromJson(Map<String, dynamic> json) {
-    return SubCategory(
-      subcategoryId: json['subcategoryId'] ?? 0,
-      subcategoryName: json['subcategoryName'] ?? '',
-      subcategoryCode: json['subcategoryCode'] ?? 0,
-      categoryCode: json['categoryCode'] ?? 0,
-      description: Description.fromJson(json['description'] ?? ''),
-      price: json['price'] ?? 0,
-      exfield1: json['exfield1'] ?? '',
-      exfield2: json['exfield2'],
-      gender: Gender.fromJson(json['gender'] ?? ''),
-      genderCode: json['genderCode'] ?? 0,
-      createDate: DateTime.parse(json['createDate']),
-      modiDate: DateTime.parse(json['modiDate']),
-      wholeseller: Wholeseller.fromJson(json['wholeseller'] ?? ''),
-    );
-  }
+  SubCategory copyWith({
+    int? subcategoryId,
+    String? subCategoryName,
+    int? categoryId,
+    dynamic categoryName,
+    String? description,
+    int? price,
+    dynamic exfield1,
+    dynamic exfield2,
+    String? gender,
+    dynamic imageUrl,
+    DateTime? createDate,
+    DateTime? modiDate,
+    String? wholesalerName,
+    int? wholesalerId,
+    dynamic subCategoryType,
+  }) =>
+      SubCategory(
+        subcategoryId: subcategoryId ?? this.subcategoryId,
+        subCategoryName: subCategoryName ?? this.subCategoryName,
+        categoryId: categoryId ?? this.categoryId,
+        categoryName: categoryName ?? this.categoryName,
+        description: description ?? this.description,
+        price: price ?? this.price,
+        exfield1: exfield1 ?? this.exfield1,
+        exfield2: exfield2 ?? this.exfield2,
+        gender: gender ?? this.gender,
+        imageUrl: imageUrl ?? this.imageUrl,
+        createDate: createDate ?? this.createDate,
+        modiDate: modiDate ?? this.modiDate,
+        wholesalerName: wholesalerName ?? this.wholesalerName,
+        wholesalerId: wholesalerId ?? this.wholesalerId,
+        subCategoryType: subCategoryType ?? this.subCategoryType,
+      );
 
-  final int categoryCode;
-  final DateTime createDate;
-  final Description description;
-  final String exfield1;
-  final String? exfield2; // Nullable field
-  final Gender gender;
-  final int genderCode;
-  final DateTime modiDate;
-  final int price;
-  final int subcategoryCode;
-  final int subcategoryId;
-  final String subcategoryName;
-  final Wholeseller wholeseller;
+  factory SubCategory.fromJson(Map<String, dynamic> json) => SubCategory(
+        subcategoryId: json["subcategoryId"],
+        subCategoryName: json["subCategoryName"],
+        categoryId: json["categoryId"],
+        categoryName: json["categoryName"],
+        description: json["description"],
+        price: json["price"],
+        exfield1: json["exfield1"],
+        exfield2: json["exfield2"],
+        gender: json["gender"],
+        imageUrl: json["imageUrl"],
+        createDate: DateTime.parse(json["createDate"]),
+        modiDate: DateTime.parse(json["modiDate"]),
+        wholesalerName: json["wholesalerName"],
+        wholesalerId: json["wholesalerId"],
+        subCategoryType: json["subCategoryType"],
+      );
 
-  @override
-  List<Object?> get props => [
-        subcategoryId,
-        subcategoryName,
-        subcategoryCode,
-        categoryCode,
-        description,
-        price,
-        exfield1,
-        exfield2,
-        gender,
-        genderCode,
-        createDate,
-        modiDate,
-        wholeseller,
-      ];
-
-  // Method for JSON serialization
-  Map<String, dynamic> toJson() {
-    return {
-      'subcategoryId': subcategoryId,
-      'subcategoryName': subcategoryName,
-      'subcategoryCode': subcategoryCode,
-      'categoryCode': categoryCode,
-      'description': description.toJson(),
-      'price': price,
-      'exfield1': exfield1,
-      'exfield2': exfield2,
-      'gender': gender.toJson(),
-      'genderCode': genderCode,
-      'createDate': createDate.toIso8601String(),
-      'modiDate': modiDate.toIso8601String(),
-      'wholeseller': wholeseller.toJson(),
-    };
-  }
+  Map<String, dynamic> toJson() => {
+        "subcategoryId": subcategoryId,
+        "subCategoryName": subCategoryName,
+        "categoryId": categoryId,
+        "categoryName": categoryName,
+        "description": description,
+        "price": price,
+        "exfield1": exfield1,
+        "exfield2": exfield2,
+        "gender": gender,
+        "imageUrl": imageUrl,
+        "createDate": createDate.toIso8601String(),
+        "modiDate": modiDate.toIso8601String(),
+        "wholesalerName": wholesalerName,
+        "wholesalerId": wholesalerId,
+        "subCategoryType": subCategoryType,
+      };
 }

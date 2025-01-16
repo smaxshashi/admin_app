@@ -1,6 +1,5 @@
-import 'dart:convert';
-
 import 'package:dio/dio.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:gehnaorg/features/add_product/data/models/login.dart';
 
 class LoginApi {
@@ -16,14 +15,21 @@ class LoginApi {
           "email": email,
           "password": password,
         },
-        options: Options(
-          contentType: 'application/json'
-        )
+        options: Options(contentType: 'application/json'),
       );
+
       if (response.statusCode == 200) {
         final login = Login.fromJson(response.data);
         print('Login successful! Token: ${login.token}');
-        print('identity:${login.identity}');
+        print('Identity: ${login.identity}');
+        print('wholesalerId: ${login.wholesalerId}');
+
+        // admin id stored here
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setInt('wholesalerId', login.wholesalerId);
+
+        print('wholesalerId stored in shared preferences: ${login.wholesalerId}');
+
         return login;
       } else {
         throw Exception('Failed to login');

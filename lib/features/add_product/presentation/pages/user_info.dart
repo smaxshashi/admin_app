@@ -18,60 +18,61 @@ class _UserInfoState extends State<UserInfo> {
   String _errorMessage = "";
 
   // Fetch user responses from the API
-  Future<void> _fetchUserResponses() async {
-    final dio = Dio();
-    const String url = 'https://api.gehnamall.com/admin/allUserResponse';
+ Future<void> _fetchUserResponses() async {
+  final dio = Dio();
+  const String url = 'https://user-service-254137058023.asia-south1.run.app/user/wholesaler/cart';
 
-    try {
-      final loginState = context.read<LoginBloc>().state;
-      if (loginState is LoginSuccess) {
-        final String token = loginState.login.token;
+  try {
+    final loginState = context.read<LoginBloc>().state;
+    if (loginState is LoginSuccess) {
+      final String token = loginState.login.token;
 
-        final response = await dio.post(
-          url,
-          options: Options(
-            headers: {
-              'Authorization': 'Bearer $token',
-            },
-          ),
-        );
+      final response = await dio.get(
+        url,
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+          },
+        ),
+      );
 
-        setState(() {
-          _userResponses = response.data; // Assuming response is a JSON array
-          _isLoading = false;
-        });
-      } else {
-        setState(() {
-          _errorMessage = "Unauthorized: Please login again.";
-          _isLoading = false;
-        });
-      }
-    } on DioException catch (e) {
       setState(() {
-        _errorMessage = 'Error: ${e.message}';
+        if (response.statusCode == 204) {
+          // No Content
+          _userResponses = [];
+          _errorMessage = ""; // Clear any previous error messages
+        } else {
+          _userResponses = response.data; // Assuming response is a JSON array
+          _errorMessage = ""; // Clear any previous error messages
+        }
+        _isLoading = false;
+      });
+    } else {
+      setState(() {
+        _errorMessage = "Unauthorized: Please login again.";
         _isLoading = false;
       });
     }
+  } on DioException catch (e) {
+    setState(() {
+      _errorMessage = 'Error: ${e.message}';
+      _isLoading = false;
+    });
   }
+}
 
   Future<Map<String, dynamic>?> _fetchUserDetail(String userId) async {
     final dio = Dio();
-    final String url = "https://api.gehnamall.com/auth/getUserDetail/$userId";
+    final String url = "https://user-service-254137058023.asia-south1.run.app/user/$userId";
 
     try {
       final loginState = context.read<LoginBloc>().state;
       if (loginState is LoginSuccess) {
-        final String token = loginState.login.token;
+        
 
         final response = await dio.get(
           url,
-          options: Options(
-            headers: {
-              'Authorization':
-                  'Bearer $token', // Include the Authorization header
-              'Content-Type': 'application/json', // Include Content-Type header
-            },
-          ),
+          
         );
 
         if (response.statusCode == 200) {

@@ -1,15 +1,21 @@
+import 'dart:convert';
 import 'dart:io';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gehnaorg/features/add_product/data/models/category.dart';
+import 'package:gehnaorg/features/add_product/data/models/post.dart';
 import 'package:gehnaorg/features/add_product/data/models/subcategory.dart';
 import 'package:gehnaorg/features/add_product/data/repositories/category_repository.dart';
 import 'package:gehnaorg/features/add_product/data/repositories/subcategory_repository.dart';
 import 'package:gehnaorg/features/add_product/presentation/bloc/add_product_bloc.dart';
 import 'package:gehnaorg/features/add_product/presentation/bloc/login_bloc.dart';
 import 'package:gehnaorg/features/add_product/presentation/bloc/subcategory_bloc/subcategory_bloc.dart';
+import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../core/constants/constants.dart';
 import '../../apis/gifting_service.dart';
@@ -37,6 +43,8 @@ class _AddProductPageState extends State<AddProductPage> {
 
   final ImagePicker _picker = ImagePicker();
   final List<XFile> _selectedImages = [];
+
+ 
 
   Future<void> _pickImages(ImageSource source) async {
     print("Picking images from gallery...");
@@ -147,22 +155,32 @@ class _AddProductPageState extends State<AddProductPage> {
       _selectedImages.removeAt(index);
     });
   }
+//
+//
 
+//
+//
+//
   Future<void> _submitProduct() async {
-    print("Submitting product...");
+    print("Starting product submission...");
+
+    // Step 1: Validate form fields
     if (!_formKey.currentState!.validate()) {
       print("Form validation failed.");
       return;
     }
 
+    // Step 2: Validate image selection (1 to 7 images allowed)
     if (_selectedImages.isEmpty || _selectedImages.length > 7) {
-      print("Invalid image selection.");
+      print(
+          "Invalid image selection: ${_selectedImages.length} images selected.");
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Select between 1 and 7 images.')),
       );
       return;
     }
 
+    // Step 3: Validate category selection
     if (_selectedCategory == null) {
       print("Category not selected.");
       ScaffoldMessenger.of(context).showSnackBar(
@@ -171,108 +189,168 @@ class _AddProductPageState extends State<AddProductPage> {
       return;
     }
 
-    final dio = Dio();
-    final String categoryCode = _selectedCategory!.categoryCode.toString();
-    final String? subCategoryCode =
-        _selectedSubCategory?.subcategoryCode.toString();
-
+    // Step 4: Check if user is logged in
     final loginState = context.read<LoginBloc>().state;
-    if (loginState is LoginSuccess) {
-      final String identity = loginState.login.identity;
-      final String token = loginState.login.token;
-      print("Login successful! Identity: $identity, Token: $token");
-
-      // Dynamically generate the URL based on subcategory presence
-      final String url = subCategoryCode == null || subCategoryCode.isEmpty
-          ? 'https://api.gehnamall.com/admin/upload/Products?category=$categoryCode&wholeseller=$identity'
-          : 'https://api.gehnamall.com/admin/upload/Products?category=$categoryCode&subCategory=$subCategoryCode&wholeseller=$identity';
-
-      print("URL for product upload: $url");
-
-      try {
-        List<MultipartFile> imageFiles = await Future.wait(_selectedImages.map(
-          (XFile image) async {
-            final bytes = await image.readAsBytes();
-            return MultipartFile.fromBytes(
-              bytes,
-              filename: image.name,
-              contentType: DioMediaType.parse('image/jpeg'),
-            );
-          },
-        ));
-
-        final formData = FormData.fromMap({
-          'productName': _productNameController.text,
-          'description': _descriptionController.text,
-          'wastage': _wastageController.text,
-          'weight': _weightController.text,
-          'karat': _selectedKarat,
-          'genderCode': _selectedGender == 1 ? '1' : '2',
-          'images': imageFiles,
-          'gifting': _selectedGifting, // Add gifting selection
-          'soulmate': _selectedSoulmate, // Add soulmate selection
-          'occasion': _selectedOccasion, // Add occasion selection
-        });
-
-        print("Sending data to server...");
-        final response = await dio.post(
-          url,
-          data: formData,
-          options: Options(
-            headers: {
-              'Content-Type': 'multipart/form-data',
-              'Authorization': 'Bearer $token',
-            },
-          ),
-        );
-
-        if (response.data['status'] == 0) {
-          print("Product added successfully!");
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Product added successfully!')),
-          );
-
-          Future.delayed(const Duration(seconds: 1), () {
-            Navigator.pushReplacement(
-              context,
-              PageRouteBuilder(
-                pageBuilder: (context, animation, secondaryAnimation) =>
-                    AddProductPage(),
-                transitionsBuilder:
-                    (context, animation, secondaryAnimation, child) {
-                  return FadeTransition(
-                    opacity: animation,
-                    child: child,
-                  );
-                },
-                transitionDuration: const Duration(
-                    milliseconds: 500), // Adjust transition speed
-              ),
-            );
-          });
-        } else {
-          print("Failed with status: ${response.data['message']}");
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed: ${response.data['message']}')),
-          );
-        }
-      } on DioException catch (e) {
-        print("DioException: ${e.response?.statusCode}");
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Server Error: ${e.response?.statusCode}')),
-        );
-      } catch (e) {
-        print("Unexpected error: $e");
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Unexpected error occurred!')),
-        );
-      }
+    if (loginState is! LoginSuccess) {
+      print("User not logged in.");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please log in to continue.')),
+      );
+      return;
     }
+
+    // Get token and identity from login state
+    final String token = loginState.login.token;
+    final String identity = loginState.login.identity;
+
+    // Step 5: Get Wholesaler ID from SharedPreferences
+    final prefs = await SharedPreferences.getInstance();
+    final int? wholesalerId = prefs.getInt('wholesalerId');
+    if (wholesalerId == null) {
+      print("Wholesaler ID not found in SharedPreferences.");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Unable to retrieve wholesaler information.')),
+      );
+      return;
+    }
+
+    // Step 6: Prepare the product upload request data
+    var uploadRequest = ProductUploadRequest(
+      productName: _productNameController.text,
+      description: _descriptionController.text,
+      wastage: _wastageController.text,
+      weight: _weightController.text,
+      karat: _selectedKarat!,
+      categoryName: _selectedCategory!.categoryName,
+      categoryId: _selectedCategory!.categoryId.toString(),
+      subCategoryName: _selectedSubCategory?.subCategoryName ?? '',
+      subCategoryId: _selectedSubCategory?.subcategoryId.toString() ?? '',
+      tagNumber: '',
+      length: '',
+      size: '',
+      wholesaler: identity,
+      wholesalerId: wholesalerId.toString(),
+      occasion: _selectedOccasion ?? '',
+      soulmate: _selectedSoulmate ?? '',
+      gifting: _selectedGifting ?? '',
+      gender: _selectedGender == 1 ? 'MEN' : 'WOMEN',
+      productType: '',
+    );
+
+    // Step 7: Upload the product
+    await uploadProduct(token, uploadRequest);
   }
+
+
+
+Future<void> uploadProduct(
+  String token, ProductUploadRequest uploadRequest) async {
+  var uri = Uri.parse(
+      'https://upload-service-254137058023.asia-south1.run.app/upload/product');
+
+  // Step 1: Create the MultipartRequest for the form upload
+  var request = http.MultipartRequest('POST', uri)
+    ..headers.addAll({
+      'Authorization': 'Bearer $token', // Add Authorization header
+    });
+
+  // Step 2: Serialize the ProductUploadRequest into JSON
+  // Convert the uploadRequest to a raw byte array and add the content type
+var jsonString = jsonEncode({
+  'productName': uploadRequest.productName,
+  'description': uploadRequest.description,
+  'wastage': uploadRequest.wastage,
+  'weight': uploadRequest.weight,
+  'karat': uploadRequest.karat,
+  'categoryName': uploadRequest.categoryName,
+  'categoryId': uploadRequest.categoryId,
+  'subCategoryName': uploadRequest.subCategoryName,
+  'subCategoryId': uploadRequest.subCategoryId,
+  'tagNumber': uploadRequest.tagNumber,
+  'length': uploadRequest.length,
+  'size': uploadRequest.size,
+  'wholesaler': uploadRequest.wholesaler,
+  'wholesalerId': uploadRequest.wholesalerId,
+  'occasion': uploadRequest.occasion,
+  'soulmate': uploadRequest.soulmate,
+  'gifting': uploadRequest.gifting,
+  'gender': uploadRequest.gender,
+  'productType': uploadRequest.productType,
+});
+
+// Add the raw JSON as a part of the multipart form
+request.files.add(http.MultipartFile.fromBytes(
+  'uploadRequest', // Field name expected by the API
+  utf8.encode(jsonString), // Convert JSON to bytes
+  filename: 'uploadRequest.json',
+  contentType: MediaType('application', 'json'), // Set content type as JSON
+));
+
+  // Step 4: Attach images to the request (if any)
+  if (_selectedImages.isEmpty) {
+    print("No images selected.");
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Please select at least one image.')),
+    );
+    return;
+  }
+
+  // Attach images to the request
+  for (var image in _selectedImages) {
+    var file = await http.MultipartFile.fromPath(
+      'images', // Field name expected by the API
+      image.path, // Image path
+      contentType: MediaType('image', 'jpeg'), // Specify the correct content type for the image
+    );
+    request.files.add(file);
+  }
+
+  print("Request fields: ${request.fields}");
+print("Request files: ${request.files}");
+
+  // Step 5: Send the request and handle the response
+  try {
+    var response = await request.send();
+    if (response.statusCode == 200) {
+      print("Product uploaded successfully!");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Product uploaded successfully!')),
+      );
+      Navigator.pushReplacement(
+        context,
+        PageRouteBuilder(
+          pageBuilder: (context, animation, secondaryAnimation) =>
+              AddProductPage(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+          transitionDuration: const Duration(milliseconds: 500),
+        ),
+      );
+    } else {
+      print("Failed to upload product. Status code: ${response.statusCode}");
+      String responseBody = await response.stream.bytesToString();
+      print('Response body: $responseBody');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to upload product: $responseBody')),
+      );
+    }
+  } catch (e) {
+    print("Error: $e");
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Error uploading product: $e')),
+    );
+  }
+}
+
+
+
+
 
   @override
   Widget build(BuildContext context) {
-    print("Building UI...");
+  
     final dio = Dio();
     final categoryRepository = CategoryRepository(dio);
     final subCategoryRepository = SubCategoryRepository(dio);
@@ -283,7 +361,7 @@ class _AddProductPageState extends State<AddProductPage> {
           create: (_) => AddProductBloc(
             categoryRepository: categoryRepository,
             subCategoryRepository: subCategoryRepository,
-          )..loadCategories('BANSAL'),
+          )..loadCategories(layoutPosition: 1),
         ),
         BlocProvider(
           create: (_) => SubCategoryBloc(subCategoryRepository),
@@ -318,7 +396,7 @@ class _AddProductPageState extends State<AddProductPage> {
                       child: DropdownButtonFormField<Category>(
                         borderRadius: BorderRadius.all(Radius.circular(12)),
                         dropdownColor: kPrimary,
-                        style: TextStyle(color: kWhite, fontSize: 18),
+                        style: TextStyle(color: const Color.fromARGB(255, 0, 0, 0), fontSize: 18),
                         isExpanded: true,
                         items: categories.map((category) {
                           return DropdownMenuItem(
@@ -336,28 +414,28 @@ class _AddProductPageState extends State<AddProductPage> {
                           if (selectedCategory != null &&
                               ['Gold', 'Silver', 'Diamond']
                                   .contains(selectedCategory.categoryName)) {
-                            // For Gold, Silver, Diamond, pass genderCode: 1
+                            // Default to "MALE" or "FEMALE" based on _selectedGender
+                            final genderString = _selectedGender == 1
+                                ? "MEN"
+                                : _selectedGender == 2
+                                    ? "WOMEN"
+                                    : null; // Fallback to null if no gender selected
                             context.read<SubCategoryBloc>().loadSubCategories(
-                                  categoryCode: selectedCategory.categoryCode,
-                                  genderCode:
-                                      1, // Default gender for Gold, Silver, Diamond
-                                  wholeseller: 'BANSAL',
+                                  categoryId: selectedCategory.categoryId,
+                                  gender: genderString, // Pass gender as String
                                 );
                           } else {
-                            // For other categories, pass genderCode: null (if genderCode is nullable)
+                            // For other categories, pass null gender
                             context.read<SubCategoryBloc>().loadSubCategories(
-                                  categoryCode:
-                                      selectedCategory?.categoryCode ??
-                                          0, // Default value if null
-                                  genderCode:
-                                      null, // Null gender for other categories
-                                  wholeseller: 'BANSAL',
+                                  categoryId: selectedCategory?.categoryId ?? 0,
+                                  gender: null,
                                 );
                           }
                         },
-                        decoration:
-                             InputDecoration(labelText: 'Select Category',border: OutlineInputBorder(),
-                             ),
+                        decoration: InputDecoration(
+                          labelText: 'Select Category',
+                          border: OutlineInputBorder(),
+                        ),
                       ),
                     ),
 
@@ -372,11 +450,11 @@ class _AddProductPageState extends State<AddProductPage> {
                             Expanded(
                               child: RadioListTile<int>(
                                 activeColor: kPrimary,
-                                title: const Text('Male'),
+                                title: const Text('MEN'),
                                 value: 1,
                                 groupValue: _selectedGender,
                                 onChanged: (value) {
-                                  print("Gender selected: Male");
+                                  print("Gender selected: MEN");
                                   setState(() {
                                     _selectedGender = value;
                                   });
@@ -384,10 +462,9 @@ class _AddProductPageState extends State<AddProductPage> {
                                     context
                                         .read<SubCategoryBloc>()
                                         .loadSubCategories(
-                                          categoryCode:
-                                              _selectedCategory!.categoryCode,
-                                          genderCode: value,
-                                          wholeseller: 'BANSAL',
+                                          categoryId:
+                                              _selectedCategory!.categoryId,
+                                          gender: "MEN", // Pass "MALE"
                                         );
                                   }
                                 },
@@ -396,11 +473,11 @@ class _AddProductPageState extends State<AddProductPage> {
                             Expanded(
                               child: RadioListTile<int>(
                                 activeColor: kPrimary,
-                                title: const Text('Female'),
+                                title: const Text('WOMEN'),
                                 value: 2,
                                 groupValue: _selectedGender,
                                 onChanged: (value) {
-                                  print("Gender selected: Female");
+                                  print("Gender selected: WOMEN");
                                   setState(() {
                                     _selectedGender = value;
                                   });
@@ -408,10 +485,9 @@ class _AddProductPageState extends State<AddProductPage> {
                                     context
                                         .read<SubCategoryBloc>()
                                         .loadSubCategories(
-                                          categoryCode:
-                                              _selectedCategory!.categoryCode,
-                                          genderCode: value,
-                                          wholeseller: 'BANSAL',
+                                          categoryId:
+                                              _selectedCategory!.categoryId,
+                                          gender: "WOMEN", // Pass "FEMALE"
                                         );
                                   }
                                 },
@@ -434,18 +510,18 @@ class _AddProductPageState extends State<AddProductPage> {
                           return Padding(
                             padding: const EdgeInsets.all(16.0),
                             child: DropdownButtonFormField<SubCategory>(
-                               dropdownColor: kPrimary,
-                        style: TextStyle(color: kWhite, fontSize: 18),
+                              dropdownColor: kPrimary,
+                              style: TextStyle(color: const Color.fromARGB(255, 0, 0, 0), fontSize: 18),
                               isExpanded: true,
                               items: subCategories.map((subCategory) {
                                 return DropdownMenuItem(
                                   value: subCategory,
-                                  child: Text(subCategory.subcategoryName),
+                                  child: Text(subCategory.subCategoryName),
                                 );
                               }).toList(),
                               onChanged: (selectedSubCategory) {
                                 print(
-                                    "Subcategory selected: ${selectedSubCategory?.subcategoryName}");
+                                    "Subcategory selected: ${selectedSubCategory?.subCategoryName}");
                                 setState(() {
                                   _selectedSubCategory = selectedSubCategory;
                                 });
@@ -465,8 +541,9 @@ class _AddProductPageState extends State<AddProductPage> {
                       padding: const EdgeInsets.all(16.0),
                       child: TextFormField(
                         controller: _productNameController,
-                        decoration:
-                            const InputDecoration(labelText: 'Product Name',border: OutlineInputBorder()),
+                        decoration: const InputDecoration(
+                            labelText: 'Product Name',
+                            border: OutlineInputBorder()),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Please enter product name';
@@ -479,8 +556,8 @@ class _AddProductPageState extends State<AddProductPage> {
                       padding: const EdgeInsets.all(16.0),
                       child: TextFormField(
                         controller: _descriptionController,
-                        decoration:
-                            const InputDecoration(labelText: 'Description',
+                        decoration: const InputDecoration(
+                            labelText: 'Description',
                             border: OutlineInputBorder()),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -494,8 +571,8 @@ class _AddProductPageState extends State<AddProductPage> {
                       padding: const EdgeInsets.all(16.0),
                       child: TextFormField(
                         controller: _wastageController,
-                        decoration: const InputDecoration(labelText: 'Wastage',
-                        border: OutlineInputBorder()),
+                        decoration: const InputDecoration(
+                            labelText: 'Wastage', border: OutlineInputBorder()),
                         keyboardType: TextInputType.number,
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -509,8 +586,8 @@ class _AddProductPageState extends State<AddProductPage> {
                       padding: const EdgeInsets.all(16.0),
                       child: TextFormField(
                         controller: _weightController,
-                        decoration:
-                            const InputDecoration(labelText: 'Weight(g)',
+                        decoration: const InputDecoration(
+                            labelText: 'Weight(g)',
                             border: OutlineInputBorder()),
                         keyboardType: TextInputType.number,
                         validator: (value) {
@@ -529,8 +606,8 @@ class _AddProductPageState extends State<AddProductPage> {
                           : _giftingOptions.isEmpty
                               ? const Text('No gifting options available')
                               : DropdownButtonFormField<String>(
-                                 dropdownColor: kPrimary,
-                        style: TextStyle(color: kWhite, fontSize: 18),
+                                  dropdownColor: kPrimary,
+                                  style: TextStyle(color: const Color.fromARGB(255, 4, 2, 2), fontSize: 18),
                                   isExpanded: true,
                                   value: _selectedGifting,
                                   decoration: const InputDecoration(
@@ -558,12 +635,13 @@ class _AddProductPageState extends State<AddProductPage> {
                           : _soulmateOptions.isEmpty
                               ? const Text('No soulmate options available')
                               : DropdownButtonFormField<String>(
-                                 dropdownColor: kPrimary,
-                        style: TextStyle(color: kWhite, fontSize: 18),
+                                  dropdownColor: kPrimary,
+                                  style: TextStyle(color: const Color.fromARGB(255, 0, 0, 0), fontSize: 18),
                                   isExpanded: true,
                                   value: _selectedSoulmate,
                                   decoration: const InputDecoration(
-                                      labelText: 'Soulmate',border: OutlineInputBorder()),
+                                      labelText: 'Soulmate',
+                                      border: OutlineInputBorder()),
                                   onChanged: (value) {
                                     print('Soulmate selected: $value');
                                     setState(() {
@@ -586,12 +664,13 @@ class _AddProductPageState extends State<AddProductPage> {
                           : _occasionOptions.isEmpty
                               ? const Text('No occasion options available')
                               : DropdownButtonFormField<String>(
-                                 dropdownColor: kPrimary,
-                        style: TextStyle(color: kWhite, fontSize: 18),
+                                  dropdownColor: kPrimary,
+                                  style: TextStyle(color: const Color.fromARGB(255, 0, 0, 0), fontSize: 18),
                                   isExpanded: true,
                                   value: _selectedOccasion,
                                   decoration: const InputDecoration(
-                                      labelText: 'Occasion',border: OutlineInputBorder()),
+                                      labelText: 'Occasion',
+                                      border: OutlineInputBorder()),
                                   onChanged: (value) {
                                     print('Occasion selected: $value');
                                     setState(() {
@@ -612,8 +691,8 @@ class _AddProductPageState extends State<AddProductPage> {
                     Padding(
                       padding: const EdgeInsets.all(16.0),
                       child: DropdownButtonFormField<String>(
-                         dropdownColor: kPrimary,
-                        style: TextStyle(color: kWhite, fontSize: 18),
+                        dropdownColor: kPrimary,
+                        style: TextStyle(color: const Color.fromARGB(255, 0, 0, 0), fontSize: 18),
                         isExpanded: true,
                         value: _selectedKarat,
                         onChanged: (value) {
@@ -628,8 +707,9 @@ class _AddProductPageState extends State<AddProductPage> {
                                   child: Text(karat),
                                 ))
                             .toList(),
-                        decoration:
-                            const InputDecoration(labelText: 'Select Karat',border: OutlineInputBorder()),
+                        decoration: const InputDecoration(
+                            labelText: 'Select Karat',
+                            border: OutlineInputBorder()),
                       ),
                     ),
                     // Image Picker Buttons
@@ -640,18 +720,22 @@ class _AddProductPageState extends State<AddProductPage> {
                         children: [
                           ElevatedButton(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: kPrimary
-                            ),
+                                backgroundColor: kPrimary),
                             onPressed: () => _pickImages(ImageSource.gallery),
-                            child: const Text('Pick Images',style: TextStyle(color: kWhite),),
+                            child: const Text(
+                              'Pick Images',
+                              style: TextStyle(color: kWhite),
+                            ),
                           ),
                           const SizedBox(width: 10),
                           ElevatedButton(
-                             style: ElevatedButton.styleFrom(
-                              backgroundColor: kPrimary
-                            ),
+                            style: ElevatedButton.styleFrom(
+                                backgroundColor: kPrimary),
                             onPressed: _captureImage,
-                            child: const Text('Capture Image',style: TextStyle(color: kWhite),),
+                            child: const Text(
+                              'Capture Image',
+                              style: TextStyle(color: kWhite),
+                            ),
                           ),
                         ],
                       ),
@@ -689,13 +773,14 @@ class _AddProductPageState extends State<AddProductPage> {
                     Padding(
                       padding: const EdgeInsets.all(16.0),
                       child: ElevatedButton(
-                         style: ElevatedButton.styleFrom(
-                          
-                              backgroundColor: kPrimary,
-                              fixedSize: Size(450,55)
-                            ),
+                        style: ElevatedButton.styleFrom(
+                            backgroundColor: kPrimary,
+                            fixedSize: Size(450, 55)),
                         onPressed: _submitProduct,
-                        child: const Text('Submit Product',style: TextStyle(color: kWhite,fontSize: 22),),
+                        child: const Text(
+                          'Submit Product',
+                          style: TextStyle(color: kWhite, fontSize: 22),
+                        ),
                       ),
                     ),
                   ],

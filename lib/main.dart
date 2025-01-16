@@ -62,7 +62,7 @@ class MyApp extends StatelessWidget {
             routes: {
               '/add_product': (context) => const AddProductPage(),
               '/home': (context) =>   const HomePage(),
-              '/profile': (context) => const ProfilePage(),
+              '/profile': (context) =>  ProfilePage(),
               '/others':(context) =>  BannerAndTestimonialPage(),
               '/light_weight':(context) =>const LightweightPage(),
               '/prices':(context) =>const PricesPage(),

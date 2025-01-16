@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/constants/constants.dart';
 import '../../apis/prices_api.dart';
 import '../../data/models/prices.dart';
@@ -22,21 +23,20 @@ class _PricesPageState extends State<PricesPage> {
   @override
   void initState() {
     super.initState();
-    _prices = fetchPrices().then((prices) {
-      controllers = List.generate(
-        prices.length * 4,
-        (index) => TextEditingController(),
-      );
+   _prices = fetchPrices().then((prices) {
+  controllers = List.generate(
+    prices.length * 4,
+    (index) => TextEditingController(),
+  );
+  for (var i = 0; i < prices.length; i++) {
+    controllers[i * 4].text = prices[i].karat18.toString();
+    controllers[i * 4 + 1].text = prices[i].karat14.toString();
+    controllers[i * 4 + 2].text = prices[i].karat24.toString();
+    controllers[i * 4 + 3].text = prices[i].karat22.toString();
+  }
+  return prices;
+});
 
-      // Set initial values in controllers
-      for (var i = 0; i < prices.length; i++) {
-        controllers[i * 4].text = prices[i].karat18.toString();
-        controllers[i * 4 + 1].text = prices[i].karat14.toString();
-        controllers[i * 4 + 2].text = prices[i].karat24.toString();
-        controllers[i * 4 + 3].text = prices[i].karat22.toString();
-      }
-      return prices;
-    });
   }
 
   void _setChanged() {
@@ -69,37 +69,55 @@ class _PricesPageState extends State<PricesPage> {
     }
   }
 
-  Future<void> _updatePriceOnServer(
+Future<void> _updatePriceOnServer(
     String metalType, String karat, double price) async {
-  final String authToken = await _getAuthToken(); // Fetch token from login state
-  final url = 'https://api.gehnamall.com/admin/update/price';
-
-  // Create the request body as JSON
-  final requestBody = json.encode({
-    'metalType': metalType,
-    'karat': karat,
-    'price': price,
-  });
-
   try {
+    final String authToken = await _getAuthToken();
+    final url =
+        "https://upload-service-254137058023.asia-south1.run.app/upload/updateMetalPrice";
+    final body = {'metalType': metalType, 'karat': karat, 'price': price};
+
+    print('Sending request: $body');
     final response = await http.put(
       Uri.parse(url),
       headers: {
         'Authorization': 'Bearer $authToken',
-        'Content-Type': 'application/json',
+        
+        'Content-Type': 'application/json', // This line fixes the issue
       },
-      body: requestBody, // Add the body here
+      body: json.encode(body),
     );
 
     if (response.statusCode == 200) {
-      print('Price updated successfully: $metalType $karat $price');
+        ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Product uploaded successfully!')),
+      );
+      Navigator.pushReplacement(
+        context,
+        PageRouteBuilder(
+          pageBuilder: (context, animation, secondaryAnimation) =>
+             PricesPage(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+          transitionDuration: const Duration(milliseconds: 500),
+        ),
+      );
+      print('Price updated successfully');
+    } else if (response.statusCode == 400) {
+      print('Bad Request: ${response.body}');
+    } else if (response.statusCode == 401) {
+      print('Unauthorized: Token expired or invalid');
     } else {
-      print('Failed to update price: ${response.statusCode} ${response.body}');
+      print('Unexpected error: ${response.statusCode}, Response: ${response.body}');
     }
   } catch (e) {
-    print('Error updating price: $e');
+    print('Error during update: $e');
   }
 }
+
+
+
 
 Future<String> _getAuthToken() async {
   // Fetch token from the login state

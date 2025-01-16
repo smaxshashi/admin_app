@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gehnaorg/core/constants/constants.dart';
 import 'package:gehnaorg/features/add_product/presentation/bloc/login_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ProductGridPage extends StatefulWidget {
   @override
@@ -16,7 +17,7 @@ class _ProductGridPageState extends State<ProductGridPage> {
   String? selectedCategory;
   bool isLoading = false;
   bool hasMore = true;
-  int page = 1;
+  int page = 0;
   final int size = 10;
   int totalProducts = 0;
 
@@ -41,9 +42,14 @@ class _ProductGridPageState extends State<ProductGridPage> {
     setState(() {
       isLoading = true;
     });
+     final prefs = await SharedPreferences.getInstance();
+      final wholesalerId = prefs.getInt('wholesalerId');
+      if (wholesalerId == null) {
+        throw Exception('wholesalerId not found in shared preferences');
+      }
 
     String url =
-        "https://api.gehnamall.com/admin/products/latest?wholeseller=BANSAL&page=$page&size=$size";
+        "https://product-service-254137058023.asia-south1.run.app/product/$wholesalerId?page=$page&size=$size";
 
     // Adding category filter if selected
     if (selectedCategory != null) {
@@ -54,16 +60,10 @@ class _ProductGridPageState extends State<ProductGridPage> {
     final loginState = context.read<LoginBloc>().state;
 
     if (loginState is LoginSuccess) {
-      final String token = loginState.login.token;
-
       try {
         final response = await dio.get(
           url,
-          options: Options(
-            headers: {
-              'Authorization': 'Bearer $token',
-            },
-          ),
+        
         );
 
         if (response.data['status'] == 0) {
@@ -204,23 +204,16 @@ class ProductDetailPage extends StatelessWidget {
 
   ProductDetailPage({required this.product});
   Future<bool> deleteProduct(BuildContext context, String productId) async {
-    const String urlBase = "https://api.gehnamall.com/admin/deleteProduct/";
+    const String urlBase = "https://upload-service-254137058023.asia-south1.run.app/upload/delete/";
     final String url = "$urlBase$productId";
 
     final dio = Dio();
     final loginState = context.read<LoginBloc>().state;
     if (loginState is LoginSuccess) {
-      final String identity = loginState.login.identity;
-      final String token = loginState.login.token;
-
-      try {
+     try {
         final response = await dio.delete(
           url,
-          options: Options(
-            headers: {
-              'Authorization': 'Bearer $token',
-            },
-          ),
+    
         );
 
         if (response.statusCode == 200 && response.data['status'] == 0) {

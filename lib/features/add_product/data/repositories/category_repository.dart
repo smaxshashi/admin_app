@@ -1,6 +1,5 @@
-//lib\features\add_product\data\repositories\category_repository.dart
-
 import 'package:dio/dio.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:gehnaorg/features/add_product/data/models/category.dart';
 
 class CategoryRepository {
@@ -8,9 +7,34 @@ class CategoryRepository {
 
   CategoryRepository(this.dio);
 
-  Future<List<Category>> fetchCategories(String wholeseller) async {
-    final response = await dio.get(
-        'http://3.110.34.172:8080/api/categories?wholeseller=$wholeseller');
-    return (response.data as List).map((e) => Category.fromJson(e)).toList();
+  Future<List<Category>> fetchCategories({
+    required int layoutPosition,
+  }) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final wholesalerId = prefs.getInt('wholesalerId');
+      if (wholesalerId == null) {
+        throw Exception('wholesalerId not found in shared preferences');
+      }
+
+      // Make the API call with adminId
+      final response = await dio.get(
+        'https://upload-service-254137058023.asia-south1.run.app/upload/$wholesalerId/getCategory',
+        queryParameters: {
+          'layoutPosition': layoutPosition,
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return (response.data as List)
+            .map((e) => Category.fromJson(e))
+            .toList();
+      } else {
+        throw Exception(
+            'Failed to fetch categories: ${response.statusMessage}');
+      }
+    } catch (e) {
+      throw Exception('Error fetching categories: $e');
+    }
   }
 }

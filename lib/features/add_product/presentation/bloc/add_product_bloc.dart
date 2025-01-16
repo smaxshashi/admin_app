@@ -16,13 +16,16 @@ class AddProductBloc extends Cubit<List<Category>> {
     required this.subCategoryRepository,
   }) : super([]);
 
-  Future<void> loadCategories(String wholeseller) async {
+  Future<void> loadCategories({required int layoutPosition}) async {
     try {
-      final categories = await categoryRepository.fetchCategories(wholeseller);
+      // Use the updated fetchCategories method
+      final categories = await categoryRepository.fetchCategories(
+        layoutPosition: layoutPosition,
+      );
       emit(categories);
     } catch (e) {
-      emit([]);
-      throw Exception('Failed to load categories');
+      emit([]); // Emit an empty list on error
+      throw Exception('Failed to load categories: $e');
     }
   }
 }

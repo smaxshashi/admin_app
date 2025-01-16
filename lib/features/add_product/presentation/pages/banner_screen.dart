@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gehnaorg/widget/banner_add.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../core/constants/constants.dart';
 import '../bloc/login_bloc.dart';
@@ -21,12 +22,25 @@ class _BannerAndTestimonialPageState extends State<BannerAndTestimonialPage> {
   void initState() {
     super.initState();
     fetchBanners();
+    
   }
 
   Future<void> fetchBanners() async {
-    final url = Uri.parse('https://api.gehnamall.com/api/banners');
+    final prefs = await SharedPreferences.getInstance();
+    final wholesalerId = prefs.getInt('wholesalerId');
+    if (wholesalerId == null) {
+      throw Exception('wholesalerId not found in shared preferences');
+    }
+
+    final url = Uri.parse(
+        'https://upload-service-254137058023.asia-south1.run.app/upload/$wholesalerId/getbanners?isActive=true');
     try {
-      final response = await http.get(url);
+      final response = await http.get(
+        url,
+        headers: {
+          "Accept": "application/json",
+        },
+      );
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         setState(() {
@@ -34,7 +48,7 @@ class _BannerAndTestimonialPageState extends State<BannerAndTestimonialPage> {
           _isLoading = false;
         });
       } else {
-        throw Exception('Failed to load banners');
+        throw Exception('Failed to fetch banners');
       }
     } catch (error) {
       print('Error fetching banners: $error');
@@ -44,38 +58,35 @@ class _BannerAndTestimonialPageState extends State<BannerAndTestimonialPage> {
     }
   }
 
-  Future<void> deleteBanner(String id) async {
-    final url = Uri.parse('https://api.gehnamall.com/admin/delete/banners/$id');
-    final loginState = context.read<LoginBloc>().state;
-    if (loginState is LoginSuccess) {
-      final String token = loginState.login.token;
+  Future<void> deleteBanner(String bannerId) async {
+   
+    final url = Uri.parse(
+        "https://upload-service-254137058023.asia-south1.run.app/upload/$bannerId/deleteBanner");
 
-      try {
-        final response = await http.post(
-          url,
-          headers: {
-            "Authorization": "Bearer $token",
-            "Content-Type": "application/json",
-          },
-        );
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          "Accept": "application/json",
+        },
+      );
 
-        if (response.statusCode == 200) {
-          setState(() {
-            _banners
-                .removeWhere((banner) => banner['bannerId'].toString() == id);
-          });
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Banner deleted successfully")),
-          );
-        } else {
-          throw Exception('Failed to delete banner');
-        }
-      } catch (error) {
-        print('Error deleting banner: $error');
+      if (response.statusCode == 200) {
+        setState(() {
+          _banners.removeWhere(
+              (banner) => banner['bannerId'].toString() == bannerId);
+        });
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Failed to delete banner")),
+          const SnackBar(content: Text("Banner deleted successfully!")),
         );
+      } else {
+        throw Exception('Opss... Failed to delete banner');
       }
+    } catch (error) {
+      print('Error deleting banner: $error');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Failed to delete banner")),
+      );
     }
   }
 
@@ -89,8 +100,8 @@ class _BannerAndTestimonialPageState extends State<BannerAndTestimonialPage> {
           style: TextStyle(
               fontSize: 24, fontWeight: FontWeight.bold, color: kWhite),
         ),
-         actions: [
-           IconButton(
+        actions: [
+          IconButton(
             onPressed: () {
               Navigator.push(context, MaterialPageRoute(
                 builder: (context) {
@@ -98,9 +109,12 @@ class _BannerAndTestimonialPageState extends State<BannerAndTestimonialPage> {
                 },
               ));
             },
-            icon: Icon(Icons.add,color: kWhite,),
+            icon: Icon(
+              Icons.add,
+              color: kWhite,
+            ),
           ),
-         ],
+        ],
         centerTitle: true,
         backgroundColor: kPrimary,
         elevation: 5,

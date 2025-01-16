@@ -1,10 +1,17 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SoulmateService {
   Future<List<String>> fetchSoulmateOptions() async {
+    final prefs = await SharedPreferences.getInstance();
+      final wholesalerId = prefs.getInt('wholesalerId');
+
+      if (wholesalerId == null) {
+        throw Exception('wholesalerId not found in shared preferences');
+      }
     final response = await http.get(
-      Uri.parse('https://api.gehnamall.com/api/soulmate'),
+      Uri.parse('https://upload-service-254137058023.asia-south1.run.app/upload/$wholesalerId/soulmate'),
     );
 
     if (response.statusCode == 200) {

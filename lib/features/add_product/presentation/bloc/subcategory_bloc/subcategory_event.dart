@@ -3,13 +3,11 @@ part of 'subcategory_bloc.dart';
 abstract class SubCategoryEvent {}
 
 class FetchSubCategoriesEvent extends SubCategoryEvent {
-  final int categoryCode;
-  final int genderCode;
-  final String wholeseller;
+  final int categoryId;
+  final int gender;
 
   FetchSubCategoriesEvent({
-    required this.categoryCode,
-    required this.genderCode,
-    required this.wholeseller,
+    required this.categoryId,
+    required this.gender,
   });
 }
