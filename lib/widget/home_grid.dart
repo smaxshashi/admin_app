@@ -42,11 +42,11 @@ class _ProductGridPageState extends State<ProductGridPage> {
     setState(() {
       isLoading = true;
     });
-     final prefs = await SharedPreferences.getInstance();
-      final wholesalerId = prefs.getInt('wholesalerId');
-      if (wholesalerId == null) {
-        throw Exception('wholesalerId not found in shared preferences');
-      }
+    final prefs = await SharedPreferences.getInstance();
+    final wholesalerId = prefs.getInt('wholesalerId');
+    if (wholesalerId == null) {
+      throw Exception('wholesalerId not found in shared preferences');
+    }
 
     String url =
         "https://product-service-254137058023.asia-south1.run.app/product/$wholesalerId?page=$page&size=$size";
@@ -63,7 +63,6 @@ class _ProductGridPageState extends State<ProductGridPage> {
       try {
         final response = await dio.get(
           url,
-        
         );
 
         if (response.data['status'] == 0) {
@@ -119,72 +118,75 @@ class _ProductGridPageState extends State<ProductGridPage> {
         backgroundColor: kPrimary,
         elevation: 5,
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: GridView.builder(
-              controller: _scrollController,
-              padding: EdgeInsets.all(8.0),
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 8.0,
-                mainAxisSpacing: 8.0,
-                childAspectRatio: 0.8,
-              ),
-              itemCount: products.length + (isLoading ? 1 : 0),
-              itemBuilder: (context, index) {
-                if (index < products.length) {
-                  final product = products[index];
-                  return GestureDetector(
-                    onTap: () async {
-                      final bool? shouldRefresh = await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              ProductDetailPage(product: product),
-                        ),
-                      );
+      body: products.isEmpty
+          ? Center(child: Text('No products found', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: kPrimary)))
+          : Column(
+              children: [
+                Expanded(
+                  child: GridView.builder(
+                    controller: _scrollController,
+                    padding: EdgeInsets.all(8.0),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 8.0,
+                      mainAxisSpacing: 8.0,
+                      childAspectRatio: 0.8,
+                    ),
+                    itemCount: products.length + (isLoading ? 1 : 0),
+                    itemBuilder: (context, index) {
+                      if (index < products.length) {
+                        final product = products[index];
+                        return GestureDetector(
+                          onTap: () async {
+                            final bool? shouldRefresh = await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    ProductDetailPage(product: product),
+                              ),
+                            );
 
-                      if (shouldRefresh == true) {
-                        refreshGrid();
+                            if (shouldRefresh == true) {
+                              refreshGrid();
+                            }
+                          },
+                          child: Card(
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10.0),
+                            ),
+                            elevation: 5,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Expanded(
+                                  child: Image.network(
+                                    product['imageUrls'][0],
+                                    fit: BoxFit.cover,
+                                    width: double.infinity,
+                                  ),
+                                ),
+                                Padding(
+                                  padding: EdgeInsets.all(8.0),
+                                  child: Text(
+                                    product['productName'] ?? "No Name",
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 20),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      } else {
+                        return Center(child: CircularProgressIndicator());
                       }
                     },
-                    child: Card(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10.0),
-                      ),
-                      elevation: 5,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Expanded(
-                            child: Image.network(
-                              product['imageUrls'][0],
-                              fit: BoxFit.cover,
-                              width: double.infinity,
-                            ),
-                          ),
-                          Padding(
-                            padding: EdgeInsets.all(8.0),
-                            child: Text(
-                              product['productName'] ?? "No Name",
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                  fontWeight: FontWeight.bold, fontSize: 20),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                } else {
-                  return Center(child: CircularProgressIndicator());
-                }
-              },
+                  ),
+                ),
+              ],
             ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -192,7 +194,7 @@ class _ProductGridPageState extends State<ProductGridPage> {
     setState(() {
       isLoading = true;
       products.clear();
-      page = 1;
+      page = 0; // Reset page to 0 to fetch from the start
       hasMore = true;
     });
     fetchProducts();
@@ -210,10 +212,9 @@ class ProductDetailPage extends StatelessWidget {
     final dio = Dio();
     final loginState = context.read<LoginBloc>().state;
     if (loginState is LoginSuccess) {
-     try {
+      try {
         final response = await dio.delete(
           url,
-    
         );
 
         if (response.statusCode == 200 && response.data['status'] == 0) {

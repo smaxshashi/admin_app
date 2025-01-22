@@ -194,7 +194,7 @@ class ProfilePage extends StatelessWidget {
         elevation: 5,
       ),
       body: token == null
-          ? Center(child: Text('No token available'))
+          ? Center(child: Text('No Data available'))
           : FutureBuilder<List<User>>(
               future: fetchUsers(token),
               builder: (context, snapshot) {
