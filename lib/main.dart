@@ -12,65 +12,67 @@ import 'package:gehnaorg/features/add_product/presentation/pages/banner_screen.d
 import 'package:gehnaorg/features/add_product/presentation/pages/prices_page.dart';
 import 'package:gehnaorg/features/add_product/presentation/pages/profile_page.dart';
 import 'package:gehnaorg/features/add_product/presentation/pages/testimonial_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app/di_container.dart'; // Dependency Injection
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Check login status
+  final isLoggedIn = await isUserLoggedIn();
+
   // Initialize the dependency injection container
   await DependencyInjection.initialize();
 
-  runApp(MyApp());
+  runApp(MyApp(isLoggedIn: isLoggedIn));
 }
 
 class MyApp extends StatelessWidget {
+  final bool isLoggedIn;
+
+  MyApp({required this.isLoggedIn});
+
   @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
-        // Provide the LoginBloc at the top level
         BlocProvider(
           create: (_) => LoginBloc(
-              loginRepository: DependencyInjection.resolve<LoginRepository>()),
+            loginRepository: DependencyInjection.resolve<LoginRepository>(),
+          ),
         ),
-        // Provide the AddProductBloc
         BlocProvider(
           create: (_) => DependencyInjection.resolve<AddProductBloc>(),
         ),
       ],
       child: ScreenUtilInit(
-        designSize: const Size(375, 812), // Set your design size (common iPhone size)
+        designSize: const Size(375, 812),
         builder: (context, child) {
           return MaterialApp(
             title: 'GehnaMall',
-            debugShowCheckedModeBanner:
-                false, // Add this line to remove the debug banner
+            debugShowCheckedModeBanner: false,
             theme: ThemeData(
               primarySwatch: Colors.blue,
               scaffoldBackgroundColor: Colors.grey[100],
             ),
-            home: BlocBuilder<LoginBloc, LoginState>(
-              builder: (context, state) {
-                if (state is LoginSuccess) {
-                  return  HomePage();
-                } else {
-                  return LoginPage();
-                }
-              },
-            ),
+            home: isLoggedIn ? HomePage() : LoginPage(),
             routes: {
               '/add_product': (context) => const AddProductPage(),
-              '/home': (context) =>   const HomePage(),
-              '/profile': (context) =>  ProfilePage(),
-              '/others':(context) =>  BannerAndTestimonialPage(),
-              '/light_weight':(context) =>const LightweightPage(),
-              '/prices':(context) =>const PricesPage(),
-              '/testi':(context) =>const TestimonialPage(),   
+              '/home': (context) => const HomePage(),
+              '/profile': (context) => ProfilePage(),
+              '/others': (context) => BannerAndTestimonialPage(),
+              '/light_weight': (context) => const LightweightPage(),
+              '/prices': (context) => const PricesPage(),
+              '/testi': (context) => const TestimonialPage(),
             },
           );
         },
       ),
     );
   }
+}
+Future<bool> isUserLoggedIn() async {
+  final prefs = await SharedPreferences.getInstance();
+  return prefs.containsKey('token');
 }

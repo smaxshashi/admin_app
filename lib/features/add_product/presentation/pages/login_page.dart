@@ -4,7 +4,6 @@ import 'package:gehnaorg/features/add_product/presentation/bloc/login_bloc.dart'
 
 import '../../../../core/constants/constants.dart';
 
-
 class LoginPage extends StatelessWidget {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
@@ -25,17 +24,18 @@ class LoginPage extends StatelessWidget {
                 padding: const EdgeInsets.all(16.0),
                 child: Center(
                   child: Column(
-                    
                     children: [
-                      Text('LOGIN',
-                      style: TextStyle(
-                        letterSpacing: 1,
-                        color: kPrimary,
-                        fontSize: 40 ,
-                      ),),
-                        SizedBox(
-                          height: 40,
+                      Text(
+                        'LOGIN',
+                        style: TextStyle(
+                          letterSpacing: 1,
+                          color: kPrimary,
+                          fontSize: 40,
                         ),
+                      ),
+                      const SizedBox(
+                        height: 40,
+                      ),
                       // Email TextField with Icon
                       TextField(
                         controller: emailController,
@@ -49,7 +49,7 @@ class LoginPage extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 20),
-              
+
                       // Password TextField with Icon
                       TextField(
                         controller: passwordController,
@@ -64,9 +64,23 @@ class LoginPage extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 24),
-              
-                      // Login Button
-                      BlocBuilder<LoginBloc, LoginState>(
+
+                      // BlocConsumer for handling state and navigation
+                      BlocConsumer<LoginBloc, LoginState>(
+                        listener: (context, state) {
+                          if (state is LoginSuccess) {
+                            // Navigate to HomePage
+                            Navigator.pushReplacementNamed(context, '/home');
+                          } else if (state is LoginFailure) {
+                            // Show error as a Snackbar
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(state.error),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        },
                         builder: (context, state) {
                           return ElevatedButton(
                             onPressed: state is LoginLoading
@@ -82,8 +96,8 @@ class LoginPage extends StatelessWidget {
                                   },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: kPrimary,
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 50, vertical: 15),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(30),
                               ),
@@ -95,17 +109,16 @@ class LoginPage extends StatelessWidget {
                                 : const Text(
                                     'Login',
                                     style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: kWhite
-                                    ),
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: kWhite),
                                   ),
                           );
                         },
                       ),
                       const SizedBox(height: 20),
-              
-                      // Display Success/Error message
+
+                      // Success/Error message handling
                       BlocBuilder<LoginBloc, LoginState>(
                         builder: (context, state) {
                           if (state is LoginSuccess) {

@@ -164,7 +164,9 @@
 //   }
 // }
 import 'package:flutter/material.dart';
+import 'package:gehnaorg/features/add_product/presentation/pages/login_page.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../core/constants/constants.dart';
 import '../../apis/profile.dart';
@@ -192,6 +194,12 @@ class ProfilePage extends StatelessWidget {
         centerTitle: true,
         backgroundColor: kPrimary,
         elevation: 5,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout,color: kWhite,),
+            onPressed: () => logout(context)
+          ),
+        ],
       ),
       body: token == null
           ? Center(child: Text('No Data available'))
@@ -200,8 +208,7 @@ class ProfilePage extends StatelessWidget {
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return Center(child: CircularProgressIndicator());
-                } else if (snapshot.hasError) {
-                  return Center(child: Text('Error: ${snapshot.error}'));
+                
                 } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
                   return Center(child: Text('No user data available'));
                 }
@@ -238,4 +245,14 @@ class ProfilePage extends StatelessWidget {
             ),
     );
   }
+}
+Future<void> logout(BuildContext context) async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.clear();
+
+  // Navigate to LoginPage
+  Navigator.pushReplacement(
+    context,
+    MaterialPageRoute(builder: (context) =>  LoginPage()),
+  );
 }
