@@ -4,43 +4,43 @@
         "source": "C:\\Users\\ASUS\\.gradle\\daemon\\8.3\\com.admin.wholesaler.app-main-36:\\mipmap-hdpi\\ic_launcher.png"
     },
     {
-        "merged": "com.admin.wholesaler.app-merged_res-41:/mipmap-xxhdpi_ic_launcher.png.flat",
-        "source": "com.admin.wholesaler.app-main-36:/mipmap-xxhdpi/ic_launcher.png"
+        "merged": "com.admin.wholesaler.app-merged_res-41:/mipmap-xxxhdpi_logo.png.flat",
+        "source": "com.admin.wholesaler.app-main-36:/mipmap-xxxhdpi/logo.png"
     },
     {
         "merged": "C:\\Users\\ASUS\\.gradle\\daemon\\8.3\\com.admin.wholesaler.app-merged_res-41:\\mipmap-xxxhdpi_ic_launcher.png.flat",
         "source": "C:\\Users\\ASUS\\.gradle\\daemon\\8.3\\com.admin.wholesaler.app-main-36:\\mipmap-xxxhdpi\\ic_launcher.png"
     },
     {
-        "merged": "C:\\Users\\ASUS\\.gradle\\daemon\\8.3\\com.admin.wholesaler.app-merged_res-41:\\drawable-v21_launch_background.xml.flat",
-        "source": "C:\\Users\\ASUS\\.gradle\\daemon\\8.3\\com.admin.wholesaler.app-main-36:\\drawable-v21\\launch_background.xml"
+        "merged": "com.admin.wholesaler.app-merged_res-41:/mipmap-xxhdpi_logo.png.flat",
+        "source": "com.admin.wholesaler.app-main-36:/mipmap-xxhdpi/logo.png"
+    },
+    {
+        "merged": "com.admin.wholesaler.app-merged_res-41:/mipmap-hdpi_logo.png.flat",
+        "source": "com.admin.wholesaler.app-main-36:/mipmap-hdpi/logo.png"
     },
     {
         "merged": "C:\\Users\\ASUS\\.gradle\\daemon\\8.3\\com.admin.wholesaler.app-merged_res-41:\\mipmap-xxhdpi_ic_launcher.png.flat",
         "source": "C:\\Users\\ASUS\\.gradle\\daemon\\8.3\\com.admin.wholesaler.app-main-36:\\mipmap-xxhdpi\\ic_launcher.png"
     },
     {
-        "merged": "com.admin.wholesaler.app-merged_res-41:/mipmap-hdpi_ic_launcher.png.flat",
-        "source": "com.admin.wholesaler.app-main-36:/mipmap-hdpi/ic_launcher.png"
+        "merged": "C:\\Users\\ASUS\\.gradle\\daemon\\8.3\\com.admin.wholesaler.app-merged_res-41:\\drawable-v21_launch_background.xml.flat",
+        "source": "C:\\Users\\ASUS\\.gradle\\daemon\\8.3\\com.admin.wholesaler.app-main-36:\\drawable-v21\\launch_background.xml"
     },
     {
-        "merged": "com.admin.wholesaler.app-merged_res-41:/mipmap-mdpi_ic_launcher.png.flat",
-        "source": "com.admin.wholesaler.app-main-36:/mipmap-mdpi/ic_launcher.png"
-    },
-    {
-        "merged": "com.admin.wholesaler.app-merged_res-41:/mipmap-xhdpi_ic_launcher.png.flat",
-        "source": "com.admin.wholesaler.app-main-36:/mipmap-xhdpi/ic_launcher.png"
+        "merged": "com.admin.wholesaler.app-merged_res-41:/mipmap-xhdpi_logo.png.flat",
+        "source": "com.admin.wholesaler.app-main-36:/mipmap-xhdpi/logo.png"
     },
     {
         "merged": "C:\\Users\\ASUS\\.gradle\\daemon\\8.3\\com.admin.wholesaler.app-merged_res-41:\\mipmap-xhdpi_ic_launcher.png.flat",
         "source": "C:\\Users\\ASUS\\.gradle\\daemon\\8.3\\com.admin.wholesaler.app-main-36:\\mipmap-xhdpi\\ic_launcher.png"
     },
     {
-        "merged": "C:\\Users\\ASUS\\.gradle\\daemon\\8.3\\com.admin.wholesaler.app-merged_res-41:\\mipmap-mdpi_ic_launcher.png.flat",
-        "source": "C:\\Users\\ASUS\\.gradle\\daemon\\8.3\\com.admin.wholesaler.app-main-36:\\mipmap-mdpi\\ic_launcher.png"
+        "merged": "com.admin.wholesaler.app-merged_res-41:/mipmap-mdpi_logo.png.flat",
+        "source": "com.admin.wholesaler.app-main-36:/mipmap-mdpi/logo.png"
     },
     {
-        "merged": "com.admin.wholesaler.app-merged_res-41:/mipmap-xxxhdpi_ic_launcher.png.flat",
-        "source": "com.admin.wholesaler.app-main-36:/mipmap-xxxhdpi/ic_launcher.png"
+        "merged": "C:\\Users\\ASUS\\.gradle\\daemon\\8.3\\com.admin.wholesaler.app-merged_res-41:\\mipmap-mdpi_ic_launcher.png.flat",
+        "source": "C:\\Users\\ASUS\\.gradle\\daemon\\8.3\\com.admin.wholesaler.app-main-36:\\mipmap-mdpi\\ic_launcher.png"
     }
 ]
