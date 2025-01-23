@@ -137,7 +137,7 @@ class LoginPage extends StatelessWidget {
                             return Padding(
                               padding: const EdgeInsets.only(top: 10.0),
                               child: Text(
-                                'Error: ${state.error}',
+                                'Login Again',
                                 style: const TextStyle(
                                   color: Colors.red,
                                   fontWeight: FontWeight.bold,
