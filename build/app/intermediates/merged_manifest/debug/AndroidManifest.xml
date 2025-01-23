@@ -43,7 +43,7 @@
         android:appComponentFactory="androidx.core.app.CoreComponentFactory"
         android:debuggable="true"
         android:extractNativeLibs="true"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@mipmap/logo"
         android:label="Jeweller Admin" >
         <activity
             android:name="com.admin.wholesaler.MainActivity"

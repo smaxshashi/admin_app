@@ -63,7 +63,7 @@
 43-->[androidx.core:core:1.13.1] C:\Users\ASUS\.gradle\caches\transforms-3\889ae3adf7a24645889ee22f4dad2cac\transformed\core-1.13.1\AndroidManifest.xml:28:18-86
 44        android:debuggable="true"
 45        android:extractNativeLibs="true"
-46        android:icon="@mipmap/ic_launcher"
+46        android:icon="@mipmap/logo"
 47        android:label="Jeweller Admin" >
 48        <activity
 49            android:name="com.admin.wholesaler.MainActivity"
