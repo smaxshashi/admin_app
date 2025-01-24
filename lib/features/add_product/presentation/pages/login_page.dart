@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:gehnaorg/features/add_product/data/models/login.dart';
 import 'package:gehnaorg/features/add_product/presentation/bloc/login_bloc.dart';
 
 import '../../../../core/constants/constants.dart';
@@ -75,7 +76,7 @@ class LoginPage extends StatelessWidget {
                             // Show error as a Snackbar
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text(state.error),
+                                content: Text("Invalid user! Please contact the administrator."), 
                                 backgroundColor: Colors.red,
                               ),
                             );
