@@ -133,22 +133,14 @@ class _LightweightPageState extends State<LightweightPage> {
       return;
     }
 
-    // Step 4: Check if user is logged in
-    final loginState = context.read<LoginBloc>().state;
-    if (loginState is! LoginSuccess) {
-      print("User not logged in.");
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please log in to continue.')),
-      );
-      return;
-    }
+  
 
-    // Get token and identity from login state
-    final String token = loginState.login.token;
-    final String identity = loginState.login.identity;
+
 
     // Step 5: Get Wholesaler ID from SharedPreferences
     final prefs = await SharedPreferences.getInstance();
+    final String? token = prefs.getString('token');
+    final String? identity = prefs.getString('identity');
     final int? wholesalerId = prefs.getInt('wholesalerId');
     if (wholesalerId == null) {
       print("Wholesaler ID not found in SharedPreferences.");
@@ -173,7 +165,7 @@ class _LightweightPageState extends State<LightweightPage> {
       tagNumber: '',
       length: '',
       size: '',
-      wholesaler: identity,
+      wholesaler: identity ?? '',
       wholesalerId: wholesalerId.toString(),
       occasion: '',
       soulmate: '',
@@ -183,7 +175,7 @@ class _LightweightPageState extends State<LightweightPage> {
     );
 
     // Step 7: Upload the product
-    await uploadProduct(token, uploadRequest);
+    await uploadProduct(token!, uploadRequest);
   }
 
 

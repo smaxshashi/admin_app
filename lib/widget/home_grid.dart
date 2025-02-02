@@ -57,9 +57,9 @@ class _ProductGridPageState extends State<ProductGridPage> {
     }
 
     final dio = Dio();
-    final loginState = context.read<LoginBloc>().state;
+   
 
-    if (loginState is LoginSuccess) {
+  
       try {
         final response = await dio.get(
           url,
@@ -93,7 +93,7 @@ class _ProductGridPageState extends State<ProductGridPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error fetching products')),
         );
-      }
+      
     }
 
     setState(() {
@@ -210,8 +210,7 @@ class ProductDetailPage extends StatelessWidget {
     final String url = "$urlBase$productId";
 
     final dio = Dio();
-    final loginState = context.read<LoginBloc>().state;
-    if (loginState is LoginSuccess) {
+   
       try {
         final response = await dio.delete(
           url,
@@ -234,7 +233,7 @@ class ProductDetailPage extends StatelessWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error occurred while deleting product.')),
         );
-      }
+      
     }
     return false;
   }

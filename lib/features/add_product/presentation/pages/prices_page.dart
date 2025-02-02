@@ -23,20 +23,19 @@ class _PricesPageState extends State<PricesPage> {
   @override
   void initState() {
     super.initState();
-   _prices = fetchPrices().then((prices) {
-  controllers = List.generate(
-    prices.length * 4,
-    (index) => TextEditingController(),
-  );
-  for (var i = 0; i < prices.length; i++) {
-    controllers[i * 4].text = prices[i].karat18.toString();
-    controllers[i * 4 + 1].text = prices[i].karat14.toString();
-    controllers[i * 4 + 2].text = prices[i].karat24.toString();
-    controllers[i * 4 + 3].text = prices[i].karat22.toString();
-  }
-  return prices;
-});
-
+    _prices = fetchPrices().then((prices) {
+      controllers = List.generate(
+        prices.length * 4,
+        (index) => TextEditingController(),
+      );
+      for (var i = 0; i < prices.length; i++) {
+        controllers[i * 4].text = prices[i].karat18.toString();
+        controllers[i * 4 + 1].text = prices[i].karat14.toString();
+        controllers[i * 4 + 2].text = prices[i].karat24.toString();
+        controllers[i * 4 + 3].text = prices[i].karat22.toString();
+      }
+      return prices;
+    });
   }
 
   void _setChanged() {
@@ -69,72 +68,71 @@ class _PricesPageState extends State<PricesPage> {
     }
   }
 
-Future<void> _updatePriceOnServer(
-    String metalType, String karat, double price) async {
-  try {
-    final String authToken = await _getAuthToken();
-    final url =
-        "https://upload-service-254137058023.asia-south1.run.app/upload/updateMetalPrice";
-    final body = {'metalType': metalType, 'karat': karat, 'price': price};
+  Future<void> _updatePriceOnServer(
+      String metalType, String karat, double price) async {
+    try {
+      final String authToken = await _getAuthToken();
+      final url =
+          "https://upload-service-254137058023.asia-south1.run.app/upload/updateMetalPrice";
+      final body = {'metalType': metalType, 'karat': karat, 'price': price};
 
-    print('Sending request: $body');
-    final response = await http.put(
-      Uri.parse(url),
-      headers: {
-        'Authorization': 'Bearer $authToken',
-        
-        'Content-Type': 'application/json', // This line fixes the issue
-      },
-      body: json.encode(body),
-    );
+      print('Sending request: $body');
+      final response = await http.put(
+        Uri.parse(url),
+        headers: {
+          'Authorization': 'Bearer $authToken',
 
-    if (response.statusCode == 200) {
+          'Content-Type': 'application/json', 
+        },
+        body: json.encode(body),
+      );
+
+      if (response.statusCode == 200) {
         ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Product uploaded successfully!')),
-      );
-      Navigator.pushReplacement(
-        context,
-        PageRouteBuilder(
-          pageBuilder: (context, animation, secondaryAnimation) =>
-             PricesPage(),
-          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            return FadeTransition(opacity: animation, child: child);
-          },
-          transitionDuration: const Duration(milliseconds: 500),
-        ),
-      );
-      print('Price updated successfully');
-    } else if (response.statusCode == 400) {
-      print('Bad Request: ${response.body}');
-    } else if (response.statusCode == 401) {
-      print('Unauthorized: Token expired or invalid');
-    } else {
-      print('Unexpected error: ${response.statusCode}, Response: ${response.body}');
+          const SnackBar(content: Text('Product uploaded successfully!')),
+        );
+        Navigator.pushReplacement(
+          context,
+          PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) =>
+                PricesPage(),
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+              return FadeTransition(opacity: animation, child: child);
+            },
+            transitionDuration: const Duration(milliseconds: 500),
+          ),
+        );
+        print('Price updated successfully');
+      } else if (response.statusCode == 400) {
+        print('Bad Request: ${response.body}');
+      } else if (response.statusCode == 401) {
+        print('Unauthorized: Token expired or invalid');
+      } else {
+        print(
+            'Unexpected error: ${response.statusCode}, Response: ${response.body}');
+      }
+    } catch (e) {
+      print('Error during update: $e');
     }
-  } catch (e) {
-    print('Error during update: $e');
   }
-}
 
-
-
-
-Future<String> _getAuthToken() async {
-  // Fetch token from the login state
-  final loginState = context.read<LoginBloc>().state;
-  if (loginState is LoginSuccess) {
-    final String token = loginState.login.token;
-    print("Token: $token"); // Log token for debugging
-    return token;
-  } else {
-    throw Exception("User is not logged in");
+  Future<String> _getAuthToken() async {
+    // Fetch token from the login state
+    final loginState = context.read<LoginBloc>().state;
+    if (loginState is LoginSuccess) {
+      final String token = loginState.login.token;
+      print("Token: $token"); // Log token for debugging
+      return token;
+    } else {
+      throw Exception("User is not logged in");
+    }
   }
-}
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-    backgroundColor: k2,
+      backgroundColor: k2,
       appBar: AppBar(
         title: const Text(
           'Prices',
@@ -182,8 +180,9 @@ Future<String> _getAuthToken() async {
                               TextField(
                                 controller: controllers[index * 4],
                                 onChanged: (value) {
-                                  price.karat18 =
-                                      double.tryParse(value) ?? price.karat18;
+                                  price.karat18 = value.trim().isEmpty
+                                      ? 0.0
+                                      : double.tryParse(value) ?? price.karat18;
                                   _setChanged();
                                 },
                               ),
@@ -192,8 +191,9 @@ Future<String> _getAuthToken() async {
                               TextField(
                                 controller: controllers[index * 4 + 1],
                                 onChanged: (value) {
-                                  price.karat14 =
-                                      double.tryParse(value) ?? price.karat14;
+                                  price.karat14 = value.trim().isEmpty
+                                      ? 0.0
+                                      : double.tryParse(value) ?? price.karat14;
                                   _setChanged();
                                 },
                               ),
@@ -202,8 +202,9 @@ Future<String> _getAuthToken() async {
                               TextField(
                                 controller: controllers[index * 4 + 2],
                                 onChanged: (value) {
-                                  price.karat24 =
-                                      double.tryParse(value) ?? price.karat24;
+                                  price.karat24 = value.trim().isEmpty
+                                      ? 0.0
+                                      : double.tryParse(value) ?? price.karat24;
                                   _setChanged();
                                 },
                               ),
@@ -212,8 +213,9 @@ Future<String> _getAuthToken() async {
                               TextField(
                                 controller: controllers[index * 4 + 3],
                                 onChanged: (value) {
-                                  price.karat22 =
-                                      double.tryParse(value) ?? price.karat22;
+                                  price.karat22 = value.trim().isEmpty
+                                      ? 0.0
+                                      : double.tryParse(value) ?? price.karat22;
                                   _setChanged();
                                 },
                               ),

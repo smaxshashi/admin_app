@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../core/constants/constants.dart';
 import '../bloc/login_bloc.dart';
@@ -23,9 +24,8 @@ class _UserInfoState extends State<UserInfo> {
   const String url = 'https://user-service-254137058023.asia-south1.run.app/user/wholesaler/cart';
 
   try {
-    final loginState = context.read<LoginBloc>().state;
-    if (loginState is LoginSuccess) {
-      final String token = loginState.login.token;
+final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
 
       final response = await dio.get(
         url,
@@ -47,12 +47,7 @@ class _UserInfoState extends State<UserInfo> {
         }
         _isLoading = false;
       });
-    } else {
-      setState(() {
-        _errorMessage = "Unauthorized: Please login again.";
-        _isLoading = false;
-      });
-    }
+    
   } on DioException catch (e) {
     setState(() {
       _errorMessage = 'Error: ${e.message}';

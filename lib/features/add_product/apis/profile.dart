@@ -9,7 +9,7 @@ Future<List<User>> fetchUsers(String token) async {
   final response = await http.get(
     Uri.parse(url),
     headers: {
-      'Authorization': 'Bearer $token', // Add the token in the Authorization header
+      'Authorization': 'Bearer $token',
     },
   );
 
