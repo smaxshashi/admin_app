@@ -1,9 +1,9 @@
 class MetalPrice {
- String metalName;
-   double karat18;
-  double karat14;
-  double karat24;
-   double karat22;
+  String metalName;
+  String karat18;
+  String karat14;
+  String karat24;
+  String karat22;
 
   MetalPrice({
     required this.metalName,
@@ -16,10 +16,10 @@ class MetalPrice {
   factory MetalPrice.fromJson(Map<String, dynamic> json) {
     return MetalPrice(
       metalName: json['metalName'],
-      karat18: double.parse(json['18K:']),
-      karat14: double.parse(json['14K:']),
-      karat24: double.parse(json['24K:']),
-      karat22: double.parse(json['22K:']),
+      karat18: json['18K:'].toString(),
+      karat14: json['14K:'].toString(),
+      karat24: json['24K:'].toString(),
+      karat22: json['22K:'].toString(),
     );
   }
 }

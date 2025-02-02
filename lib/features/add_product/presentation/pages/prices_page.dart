@@ -29,10 +29,10 @@ class _PricesPageState extends State<PricesPage> {
         (index) => TextEditingController(),
       );
       for (var i = 0; i < prices.length; i++) {
-        controllers[i * 4].text = prices[i].karat18.toString();
-        controllers[i * 4 + 1].text = prices[i].karat14.toString();
-        controllers[i * 4 + 2].text = prices[i].karat24.toString();
-        controllers[i * 4 + 3].text = prices[i].karat22.toString();
+        controllers[i * 4].text = prices[i].karat18;
+        controllers[i * 4 + 1].text = prices[i].karat14;
+        controllers[i * 4 + 2].text = prices[i].karat24;
+        controllers[i * 4 + 3].text = prices[i].karat22;
       }
       return prices;
     });
@@ -49,10 +49,14 @@ class _PricesPageState extends State<PricesPage> {
 
     for (var price in prices) {
       try {
-        await _updatePriceOnServer(price.metalName, '18K', price.karat18);
-        await _updatePriceOnServer(price.metalName, '14K', price.karat14);
-        await _updatePriceOnServer(price.metalName, '24K', price.karat24);
-        await _updatePriceOnServer(price.metalName, '22K', price.karat22);
+        if (price.metalName == "Silver") {
+          await _updatePriceOnServer(price.metalName, '24K', price.karat24);
+        } else {
+          await _updatePriceOnServer(price.metalName, '18K', price.karat18);
+          await _updatePriceOnServer(price.metalName, '14K', price.karat14);
+          await _updatePriceOnServer(price.metalName, '24K', price.karat24);
+          await _updatePriceOnServer(price.metalName, '22K', price.karat22);
+        }
       } catch (e) {
         allSuccess = false;
         print('Error: $e');
@@ -69,9 +73,10 @@ class _PricesPageState extends State<PricesPage> {
   }
 
   Future<void> _updatePriceOnServer(
-      String metalType, String karat, double price) async {
+      String metalType, String karat, String price) async {
     try {
-      final String authToken = await _getAuthToken();
+      final prefs = await SharedPreferences.getInstance();
+      final authToken = prefs.getString('token');
       final url =
           "https://upload-service-254137058023.asia-south1.run.app/upload/updateMetalPrice";
       final body = {'metalType': metalType, 'karat': karat, 'price': price};
@@ -81,8 +86,7 @@ class _PricesPageState extends State<PricesPage> {
         Uri.parse(url),
         headers: {
           'Authorization': 'Bearer $authToken',
-
-          'Content-Type': 'application/json', 
+          'Content-Type': 'application/json',
         },
         body: json.encode(body),
       );
@@ -114,18 +118,6 @@ class _PricesPageState extends State<PricesPage> {
       }
     } catch (e) {
       print('Error during update: $e');
-    }
-  }
-
-  Future<String> _getAuthToken() async {
-    // Fetch token from the login state
-    final loginState = context.read<LoginBloc>().state;
-    if (loginState is LoginSuccess) {
-      final String token = loginState.login.token;
-      print("Token: $token"); // Log token for debugging
-      return token;
-    } else {
-      throw Exception("User is not logged in");
     }
   }
 
@@ -180,9 +172,7 @@ class _PricesPageState extends State<PricesPage> {
                               TextField(
                                 controller: controllers[index * 4],
                                 onChanged: (value) {
-                                  price.karat18 = value.trim().isEmpty
-                                      ? 0.0
-                                      : double.tryParse(value) ?? price.karat18;
+                                  price.karat18 = value;
                                   _setChanged();
                                 },
                               ),
@@ -191,9 +181,7 @@ class _PricesPageState extends State<PricesPage> {
                               TextField(
                                 controller: controllers[index * 4 + 1],
                                 onChanged: (value) {
-                                  price.karat14 = value.trim().isEmpty
-                                      ? 0.0
-                                      : double.tryParse(value) ?? price.karat14;
+                                  price.karat14 = value;
                                   _setChanged();
                                 },
                               ),
@@ -202,9 +190,7 @@ class _PricesPageState extends State<PricesPage> {
                               TextField(
                                 controller: controllers[index * 4 + 2],
                                 onChanged: (value) {
-                                  price.karat24 = value.trim().isEmpty
-                                      ? 0.0
-                                      : double.tryParse(value) ?? price.karat24;
+                                  price.karat24 = value;
                                   _setChanged();
                                 },
                               ),
@@ -213,9 +199,7 @@ class _PricesPageState extends State<PricesPage> {
                               TextField(
                                 controller: controllers[index * 4 + 3],
                                 onChanged: (value) {
-                                  price.karat22 = value.trim().isEmpty
-                                      ? 0.0
-                                      : double.tryParse(value) ?? price.karat22;
+                                  price.karat22 = value;
                                   _setChanged();
                                 },
                               ),
