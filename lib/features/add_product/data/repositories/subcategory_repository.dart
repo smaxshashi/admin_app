@@ -9,7 +9,7 @@ class SubCategoryRepository {
 
   Future<List<SubCategory>> fetchSubCategories({
     required int categoryId,
-    required String? gender, // Changed from int? to String?
+    required String? gender, // Gender parameter, which can be null
   }) async {
     try {
       // Fetch wholesalerId from SharedPreferences
@@ -25,13 +25,10 @@ class SubCategoryRepository {
       final apiUrl =
           'https://upload-service-254137058023.asia-south1.run.app/upload/$wholesalerId/getSubCategories/$categoryId';
 
-      // Build query parameters
-      final queryParams = {
-        if (gender != null) 'gender': gender, // Pass gender as String
-      };
-
-      // Make the API request
-      final response = await dio.get(apiUrl, queryParameters: queryParams);
+      final response = await dio.get(
+        apiUrl,
+        queryParameters: gender != null ? {'gender': gender} : null,
+      );
 
       if (response.statusCode == 200) {
         // Map response data to SubCategory model

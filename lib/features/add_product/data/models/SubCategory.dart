@@ -15,7 +15,7 @@ class SubCategory {
   final int price;
   final dynamic exfield1;
   final dynamic exfield2;
-  final String gender;
+  final String? gender;
   final dynamic imageUrl;
   final DateTime createDate;
   final DateTime modiDate;

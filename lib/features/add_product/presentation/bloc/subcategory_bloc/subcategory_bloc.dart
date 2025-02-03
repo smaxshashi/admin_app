@@ -11,18 +11,26 @@ class SubCategoryBloc extends Cubit<SubCategoryState> {
   SubCategoryBloc(this.subCategoryRepository) : super(SubCategoryInitial());
 
   Future<void> loadSubCategories({
-    required int categoryId,
-    required String? gender, // Changed from int? to String?
-  }) async {
-    try {
-      emit(SubCategoryLoading());
-      final subcategories = await subCategoryRepository.fetchSubCategories(
-        categoryId: categoryId,
-        gender: gender, // Pass gender as String?
-      );
-      emit(SubCategoryLoaded(subcategories));
-    } catch (e) {
-      emit(SubCategoryError('Failed to load subcategories: $e'));
-    }
+  required int categoryId,
+  required String? gender,
+}) async {
+  try {
+    print(" Calling API for categoryId: $categoryId, gender: $gender");
+    emit(SubCategoryLoading()); // 👈 Check if this prints
+    print("State Changed to: SubCategoryLoading");
+
+    final subcategories = await subCategoryRepository.fetchSubCategories(
+      categoryId: categoryId,
+      gender: gender,
+    );
+
+    print("✅ API Response: ${subcategories.length} subcategories found");
+    emit(SubCategoryLoaded(subcategories)); // 👈 Check if this prints
+    print("🟢 State Changed to: SubCategoryLoaded");
+  } catch (e) {
+    print("❌ Error: $e");
+    emit(SubCategoryError('Failed to load subcategories: $e'));
   }
+}
+
 }

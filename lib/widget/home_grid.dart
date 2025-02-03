@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gehnaorg/core/constants/constants.dart';
-import 'package:gehnaorg/features/add_product/presentation/bloc/login_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ProductGridPage extends StatefulWidget {
@@ -103,7 +101,8 @@ class _ProductGridPageState extends State<ProductGridPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return isLoading ? Center(child: CircularProgressIndicator()) :
+     Scaffold(
       backgroundColor: k2,
       appBar: AppBar(
         centerTitle: true,
@@ -118,7 +117,8 @@ class _ProductGridPageState extends State<ProductGridPage> {
         backgroundColor: kPrimary,
         elevation: 5,
       ),
-      body: products.isEmpty
+      body: isLoading ? Center(child: CircularProgressIndicator()) : 
+      products.isEmpty
           ? Center(child: Text('No products found', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: kPrimary)))
           : Column(
               children: [

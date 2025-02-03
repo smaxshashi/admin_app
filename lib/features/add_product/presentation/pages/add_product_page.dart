@@ -44,8 +44,6 @@ class _AddProductPageState extends State<AddProductPage> {
   final ImagePicker _picker = ImagePicker();
   final List<XFile> _selectedImages = [];
 
- 
-
   Future<void> _pickImages(ImageSource source) async {
     print("Picking images from gallery...");
     final List<XFile>? pickedImages = await _picker.pickMultiImage();
@@ -189,8 +187,6 @@ class _AddProductPageState extends State<AddProductPage> {
       return;
     }
 
-  
-
     // Step 5: Get Wholesaler ID from SharedPreferences
     final prefs = await SharedPreferences.getInstance();
     final String? token = prefs.getString('token');
@@ -233,115 +229,110 @@ class _AddProductPageState extends State<AddProductPage> {
     await uploadProduct(token!, uploadRequest);
   }
 
+  Future<void> uploadProduct(
+      String token, ProductUploadRequest uploadRequest) async {
+    var uri = Uri.parse(
+        'https://upload-service-254137058023.asia-south1.run.app/upload/product');
 
+    // Step 1: Create the MultipartRequest for the form upload
+    var request = http.MultipartRequest('POST', uri)
+      ..headers.addAll({
+        'Authorization': 'Bearer $token', // Add Authorization header
+      });
 
-Future<void> uploadProduct(
-  String token, ProductUploadRequest uploadRequest) async {
-  var uri = Uri.parse(
-      'https://upload-service-254137058023.asia-south1.run.app/upload/product');
-
-  // Step 1: Create the MultipartRequest for the form upload
-  var request = http.MultipartRequest('POST', uri)
-    ..headers.addAll({
-      'Authorization': 'Bearer $token', // Add Authorization header
+    // Step 2: Serialize the ProductUploadRequest into JSON
+    // Convert the uploadRequest to a raw byte array and add the content type
+    var jsonString = jsonEncode({
+      'productName': uploadRequest.productName,
+      'description': uploadRequest.description,
+      'wastage': uploadRequest.wastage,
+      'weight': uploadRequest.weight,
+      'karat': uploadRequest.karat,
+      'categoryName': uploadRequest.categoryName,
+      'categoryId': uploadRequest.categoryId,
+      'subCategoryName': uploadRequest.subCategoryName,
+      'subCategoryId': uploadRequest.subCategoryId,
+      'tagNumber': uploadRequest.tagNumber,
+      'length': uploadRequest.length,
+      'size': uploadRequest.size,
+      'wholesaler': uploadRequest.wholesaler,
+      'wholesalerId': uploadRequest.wholesalerId,
+      'occasion': uploadRequest.occasion,
+      'soulmate': uploadRequest.soulmate,
+      'gifting': uploadRequest.gifting,
+      'gender': uploadRequest.gender,
+      'productType': uploadRequest.productType,
     });
 
-  // Step 2: Serialize the ProductUploadRequest into JSON
-  // Convert the uploadRequest to a raw byte array and add the content type
-var jsonString = jsonEncode({
-  'productName': uploadRequest.productName,
-  'description': uploadRequest.description,
-  'wastage': uploadRequest.wastage,
-  'weight': uploadRequest.weight,
-  'karat': uploadRequest.karat,
-  'categoryName': uploadRequest.categoryName,
-  'categoryId': uploadRequest.categoryId,
-  'subCategoryName': uploadRequest.subCategoryName,
-  'subCategoryId': uploadRequest.subCategoryId,
-  'tagNumber': uploadRequest.tagNumber,
-  'length': uploadRequest.length,
-  'size': uploadRequest.size,
-  'wholesaler': uploadRequest.wholesaler,
-  'wholesalerId': uploadRequest.wholesalerId,
-  'occasion': uploadRequest.occasion,
-  'soulmate': uploadRequest.soulmate,
-  'gifting': uploadRequest.gifting,
-  'gender': uploadRequest.gender,
-  'productType': uploadRequest.productType,
-});
-
 // Add the raw JSON as a part of the multipart form
-request.files.add(http.MultipartFile.fromBytes(
-  'uploadRequest', // Field name expected by the API
-  utf8.encode(jsonString), // Convert JSON to bytes
-  filename: 'uploadRequest.json',
-  contentType: MediaType('application', 'json'), // Set content type as JSON
-));
+    request.files.add(http.MultipartFile.fromBytes(
+      'uploadRequest', // Field name expected by the API
+      utf8.encode(jsonString), // Convert JSON to bytes
+      filename: 'uploadRequest.json',
+      contentType: MediaType('application', 'json'), // Set content type as JSON
+    ));
 
-  // Step 4: Attach images to the request (if any)
-  if (_selectedImages.isEmpty) {
-    print("No images selected.");
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Please select at least one image.')),
-    );
-    return;
-  }
-
-  // Attach images to the request
-  for (var image in _selectedImages) {
-    var file = await http.MultipartFile.fromPath(
-      'images', // Field name expected by the API
-      image.path, // Image path
-      contentType: MediaType('image', 'jpeg'), // Specify the correct content type for the image
-    );
-    request.files.add(file);
-  }
-
-  print("Request fields: ${request.fields}");
-print("Request files: ${request.files}");
-
-  // Step 5: Send the request and handle the response
-  try {
-    var response = await request.send();
-    if (response.statusCode == 200) {
-      print("Product uploaded successfully!");
+    // Step 4: Attach images to the request (if any)
+    if (_selectedImages.isEmpty) {
+      print("No images selected.");
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Product uploaded successfully!')),
+        const SnackBar(content: Text('Please select at least one image.')),
       );
-      Navigator.pushReplacement(
-        context,
-        PageRouteBuilder(
-          pageBuilder: (context, animation, secondaryAnimation) =>
-              AddProductPage(),
-          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            return FadeTransition(opacity: animation, child: child);
-          },
-          transitionDuration: const Duration(milliseconds: 500),
-        ),
+      return;
+    }
+
+    // Attach images to the request
+    for (var image in _selectedImages) {
+      var file = await http.MultipartFile.fromPath(
+        'images', // Field name expected by the API
+        image.path, // Image path
+        contentType: MediaType(
+            'image', 'jpeg'), // Specify the correct content type for the image
       );
-    } else {
-      print("Failed to upload product. Status code: ${response.statusCode}");
-      String responseBody = await response.stream.bytesToString();
-      print('Response body: $responseBody');
+      request.files.add(file);
+    }
+
+    print("Request fields: ${request.fields}");
+    print("Request files: ${request.files}");
+
+    // Step 5: Send the request and handle the response
+    try {
+      var response = await request.send();
+      if (response.statusCode == 200) {
+        print("Product uploaded successfully!");
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Product uploaded successfully!')),
+        );
+        Navigator.pushReplacement(
+          context,
+          PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) =>
+                AddProductPage(),
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+              return FadeTransition(opacity: animation, child: child);
+            },
+            transitionDuration: const Duration(milliseconds: 500),
+          ),
+        );
+      } else {
+        print("Failed to upload product. Status code: ${response.statusCode}");
+        String responseBody = await response.stream.bytesToString();
+        print('Response body: $responseBody');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to upload product: $responseBody')),
+        );
+      }
+    } catch (e) {
+      print("Error: $e");
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to upload product: $responseBody')),
+        SnackBar(content: Text('Error uploading product: $e')),
       );
     }
-  } catch (e) {
-    print("Error: $e");
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Error uploading product: $e')),
-    );
   }
-}
-
-
-
-
 
   @override
   Widget build(BuildContext context) {
-  
     final dio = Dio();
     final categoryRepository = CategoryRepository(dio);
     final subCategoryRepository = SubCategoryRepository(dio);
@@ -386,13 +377,15 @@ print("Request files: ${request.files}");
                       padding: const EdgeInsets.all(16.0),
                       child: DropdownButtonFormField<Category>(
                         borderRadius: BorderRadius.all(Radius.circular(12)),
-                        dropdownColor: kPrimary,
-                        style: TextStyle(color: const Color.fromARGB(255, 0, 0, 0), fontSize: 18),
+                        dropdownColor: kWhite,
+                        style: TextStyle(
+                            color: const Color.fromARGB(255, 0, 0, 0),
+                            fontSize: 18),
                         isExpanded: true,
                         items: categories.map((category) {
                           return DropdownMenuItem(
                             value: category,
-                            child: Text(category.categoryName),
+                            child: Text(category.categoryName,style: TextStyle(color: Colors.black),),
                           );
                         }).toList(),
                         onChanged: (selectedCategory) {
@@ -402,6 +395,7 @@ print("Request files: ${request.files}");
                             _selectedCategory = selectedCategory;
                           });
 
+                          // Check if category is "Gold", "Silver", or "Diamond"
                           if (selectedCategory != null &&
                               ['Gold', 'Silver', 'Diamond']
                                   .contains(selectedCategory.categoryName)) {
@@ -416,10 +410,11 @@ print("Request files: ${request.files}");
                                   gender: genderString, // Pass gender as String
                                 );
                           } else {
-                            // For other categories, pass null gender
+                            // For other categories (non-"Gold", "Silver", "Diamond"), send null gender
                             context.read<SubCategoryBloc>().loadSubCategories(
-                                  categoryId: selectedCategory?.categoryId ?? 0,
-                                  gender: null,
+                                  categoryId: selectedCategory!.categoryId,
+                                  gender:
+                                      null, // Pass null for categories other than Gold, Silver, or Diamond
                                 );
                           }
                         },
@@ -495,14 +490,20 @@ print("Request files: ${request.files}");
                               child: CircularProgressIndicator());
                         }
                         if (state is SubCategoryLoaded) {
+                          print(state.subcategories);
                           final subCategories = state.subcategories;
                           print(
                               "Subcategories loaded: ${subCategories.length}");
+                          // Check if subcategories are empty
+                       
+
                           return Padding(
                             padding: const EdgeInsets.all(16.0),
                             child: DropdownButtonFormField<SubCategory>(
-                              dropdownColor: kPrimary,
-                              style: TextStyle(color: const Color.fromARGB(255, 0, 0, 0), fontSize: 18),
+                              dropdownColor: kWhite,
+                              style: TextStyle(
+                                  color: const Color.fromARGB(255, 0, 0, 0),
+                                  fontSize: 18),
                               isExpanded: true,
                               items: subCategories.map((subCategory) {
                                 return DropdownMenuItem(
@@ -523,7 +524,7 @@ print("Request files: ${request.files}");
                             ),
                           );
                         }
-                        return const SizedBox();
+                        return const SizedBox.shrink();
                       },
                     ),
 
@@ -598,7 +599,9 @@ print("Request files: ${request.files}");
                               ? const Text('No gifting options available')
                               : DropdownButtonFormField<String>(
                                   dropdownColor: kPrimary,
-                                  style: TextStyle(color: const Color.fromARGB(255, 4, 2, 2), fontSize: 18),
+                                  style: TextStyle(
+                                      color: const Color.fromARGB(255, 4, 2, 2),
+                                      fontSize: 18),
                                   isExpanded: true,
                                   value: _selectedGifting,
                                   decoration: const InputDecoration(
@@ -627,7 +630,9 @@ print("Request files: ${request.files}");
                               ? const Text('No soulmate options available')
                               : DropdownButtonFormField<String>(
                                   dropdownColor: kPrimary,
-                                  style: TextStyle(color: const Color.fromARGB(255, 0, 0, 0), fontSize: 18),
+                                  style: TextStyle(
+                                      color: const Color.fromARGB(255, 0, 0, 0),
+                                      fontSize: 18),
                                   isExpanded: true,
                                   value: _selectedSoulmate,
                                   decoration: const InputDecoration(
@@ -656,7 +661,9 @@ print("Request files: ${request.files}");
                               ? const Text('No occasion options available')
                               : DropdownButtonFormField<String>(
                                   dropdownColor: kPrimary,
-                                  style: TextStyle(color: const Color.fromARGB(255, 0, 0, 0), fontSize: 18),
+                                  style: TextStyle(
+                                      color: const Color.fromARGB(255, 0, 0, 0),
+                                      fontSize: 18),
                                   isExpanded: true,
                                   value: _selectedOccasion,
                                   decoration: const InputDecoration(
@@ -683,7 +690,9 @@ print("Request files: ${request.files}");
                       padding: const EdgeInsets.all(16.0),
                       child: DropdownButtonFormField<String>(
                         dropdownColor: kPrimary,
-                        style: TextStyle(color: const Color.fromARGB(255, 0, 0, 0), fontSize: 18),
+                        style: TextStyle(
+                            color: const Color.fromARGB(255, 0, 0, 0),
+                            fontSize: 18),
                         isExpanded: true,
                         value: _selectedKarat,
                         onChanged: (value) {
