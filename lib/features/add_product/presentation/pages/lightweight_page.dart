@@ -354,7 +354,7 @@ print("Request files: ${request.files}");
                 controller: _wastageController,
                 decoration: const InputDecoration(
                     labelText: 'Wastage', border: OutlineInputBorder()),
-                keyboardType: TextInputType.number,
+               keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Please enter wastage';
@@ -368,7 +368,7 @@ print("Request files: ${request.files}");
                       decoration: const InputDecoration(
                           labelText: 'Weight(g)',
                           border: OutlineInputBorder()),
-                      keyboardType: TextInputType.number,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
                           return 'Please enter weight';

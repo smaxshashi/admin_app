@@ -565,7 +565,7 @@ class _AddProductPageState extends State<AddProductPage> {
                         controller: _wastageController,
                         decoration: const InputDecoration(
                             labelText: 'Wastage', border: OutlineInputBorder()),
-                        keyboardType: TextInputType.number,
+                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Please enter wastage';
@@ -581,7 +581,7 @@ class _AddProductPageState extends State<AddProductPage> {
                         decoration: const InputDecoration(
                             labelText: 'Weight(g)',
                             border: OutlineInputBorder()),
-                        keyboardType: TextInputType.number,
+                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Please enter weight';

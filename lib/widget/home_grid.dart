@@ -37,72 +37,61 @@ class _ProductGridPageState extends State<ProductGridPage> {
   }
 
   Future<void> fetchProducts() async {
+    if (isLoading) return; // Prevent multiple simultaneous requests
+    
     setState(() {
       isLoading = true;
     });
+    
     final prefs = await SharedPreferences.getInstance();
     final wholesalerId = prefs.getInt('wholesalerId');
     if (wholesalerId == null) {
       throw Exception('wholesalerId not found in shared preferences');
     }
 
-    String url =
-        "https://product-service-254137058023.asia-south1.run.app/product/$wholesalerId?page=$page&size=$size";
+    String url = "https://product-service-254137058023.asia-south1.run.app/product/$wholesalerId?page=$page&size=$size";
 
-    // Adding category filter if selected
-    if (selectedCategory != null) {
-      url += "&category=$selectedCategory";
-    }
 
     final dio = Dio();
-   
+    
+    try {
+      final response = await dio.get(url);
 
-  
-      try {
-        final response = await dio.get(
-          url,
-        );
+      if (response.data['status'] == 0) {
+        final List<dynamic> newProducts = response.data['products'];
+        
 
-        if (response.data['status'] == 0) {
-          final List<dynamic> newProducts = response.data['products'];
-          final int fetchedTotalProducts = response.data['totalProducts'];
-
-          setState(() {
-            // Filter products by category if selectedCategory is not null
-            if (selectedCategory != null) {
-              // Only add products that match the selected category
-              products.addAll(newProducts.where(
-                  (product) => product['categoryName'] == selectedCategory));
-            } else {
-              // If no category is selected, add all products
-              products.addAll(newProducts);
-            }
-            page++;
-            hasMore =
-                newProducts.length == size; // Check if there are more products
-            totalProducts =
-                fetchedTotalProducts; // Update the total count of products
-          });
-        } else {
-          print("Failed to fetch products: ${response.data['message']}");
-        }
-      } catch (e) {
-        print("Error: $e");
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error fetching products')),
-        );
-      
+        setState(() {
+          if (selectedCategory != null) {
+            products.addAll(newProducts.where(
+                (product) => product['categoryName'] == selectedCategory));
+          } else {
+            products.addAll(newProducts);
+          }
+          page++;
+          hasMore = newProducts.length == size;
+          isLoading = false;
+        });
+      } else {
+        setState(() {
+          isLoading = false;
+        });
+        print("Failed to fetch products: ${response.data['message']}");
+      }
+    } catch (e) {
+      setState(() {
+        isLoading = false;
+      });
+      print("Error: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error fetching products')),
+      );
     }
-
-    setState(() {
-      isLoading = false; // End loading state
-    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return isLoading ? Center(child: CircularProgressIndicator()) :
-     Scaffold(
+    return Scaffold(
       backgroundColor: k2,
       appBar: AppBar(
         centerTitle: true,
@@ -117,87 +106,119 @@ class _ProductGridPageState extends State<ProductGridPage> {
         backgroundColor: kPrimary,
         elevation: 5,
       ),
-      body: isLoading ? Center(child: CircularProgressIndicator()) : 
-      products.isEmpty
-          ? Center(child: Text('No products found', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: kPrimary)))
-          : Column(
-              children: [
-                Expanded(
-                  child: GridView.builder(
-                    controller: _scrollController,
-                    padding: EdgeInsets.all(8.0),
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 8.0,
-                      mainAxisSpacing: 8.0,
-                      childAspectRatio: 0.8,
+      body: products.isEmpty && isLoading
+          ? Center(child: CircularProgressIndicator())
+          : products.isEmpty
+              ? Center(
+                  child: Text(
+                    'No products found',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: kPrimary,
                     ),
-                    itemCount: products.length + (isLoading ? 1 : 0),
-                    itemBuilder: (context, index) {
-                      if (index < products.length) {
-                        final product = products[index];
-                        return GestureDetector(
-                          onTap: () async {
-                            final bool? shouldRefresh = await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    ProductDetailPage(product: product),
-                              ),
-                            );
-
-                            if (shouldRefresh == true) {
-                              refreshGrid();
-                            }
-                          },
-                          child: Card(
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10.0),
-                            ),
-                            elevation: 5,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Expanded(
-                                  child: Image.network(
-                                    product['imageUrls'][0],
-                                    fit: BoxFit.cover,
-                                    width: double.infinity,
-                                  ),
-                                ),
-                                Padding(
-                                  padding: EdgeInsets.all(8.0),
-                                  child: Text(
-                                    product['productName'] ?? "No Name",
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 20),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      } else {
-                        return Center(child: CircularProgressIndicator());
-                      }
-                    },
                   ),
+                )
+              : Column(
+                  children: [
+                    Expanded(
+                      child: GridView.builder(
+                        controller: _scrollController,
+                        padding: EdgeInsets.all(8.0),
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 8.0,
+                          mainAxisSpacing: 8.0,
+                          childAspectRatio: 0.8,
+                        ),
+                        itemCount: products.length + (hasMore ? 1 : 0),
+                        itemBuilder: (context, index) {
+                          if (index == products.length && hasMore) {
+                            return Center(child: CircularProgressIndicator());
+                          }
+
+                          final product = products[index];
+                          return GestureDetector(
+                            onTap: () async {
+                              final bool? shouldRefresh = await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      ProductDetailPage(product: product),
+                                ),
+                              );
+
+                              if (shouldRefresh == true) {
+                                refreshGrid();
+                              }
+                            },
+                            child: Card(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10.0),
+                              ),
+                              elevation: 5,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Expanded(
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.vertical(
+                                        top: Radius.circular(10.0),
+                                      ),
+                                      child: Image.network(
+                                        product['imageUrls'][0],
+                                        fit: BoxFit.cover,
+                                        width: double.infinity,
+                                        loadingBuilder: (context, child, loadingProgress) {
+                                          if (loadingProgress == null) return child;
+                                          return Center(
+                                            child: CircularProgressIndicator(
+                                              value: loadingProgress.expectedTotalBytes != null
+                                                  ? loadingProgress.cumulativeBytesLoaded /
+                                                      loadingProgress.expectedTotalBytes!
+                                                  : null,
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                  ),
+                                  Padding(
+                                    padding: EdgeInsets.all(8.0),
+                                    child: Text(
+                                      product['productName'] ?? "No Name",
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 20,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
     );
   }
 
   void refreshGrid() {
     setState(() {
-      isLoading = true;
       products.clear();
-      page = 0; // Reset page to 0 to fetch from the start
+      page = 0;
       hasMore = true;
     });
     fetchProducts();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 }
 
@@ -205,35 +226,34 @@ class ProductDetailPage extends StatelessWidget {
   final Map<String, dynamic> product;
 
   ProductDetailPage({required this.product});
+
   Future<bool> deleteProduct(BuildContext context, String productId) async {
-    const String urlBase = "https://upload-service-254137058023.asia-south1.run.app/upload/delete/";
+    const String urlBase =
+        "https://upload-service-254137058023.asia-south1.run.app/upload/delete/";
     final String url = "$urlBase$productId";
 
     final dio = Dio();
-   
-      try {
-        final response = await dio.delete(
-          url,
-        );
 
-        if (response.statusCode == 200 && response.data['status'] == 0) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Product deleted successfully!')),
-          );
-          return true;
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-                content: Text(
-                    'Failed to delete product: ${response.data['message']}')),
-          );
-        }
-      } catch (e) {
-        print("Error: $e");
+    try {
+      final response = await dio.delete(url);
+
+      if (response.statusCode == 200 && response.data['status'] == 0) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error occurred while deleting product.')),
+          SnackBar(content: Text('Product deleted successfully!')),
         );
-      
+        return true;
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to delete product: ${response.data['message']}'),
+          ),
+        );
+      }
+    } catch (e) {
+      print("Error: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error occurred while deleting product.')),
+      );
     }
     return false;
   }
@@ -242,23 +262,41 @@ class ProductDetailPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(product['productName'] ?? "Product Details",
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+        title: Text(
+          product['productName'] ?? "Product Details",
+          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+        ),
       ),
       body: SingleChildScrollView(
         padding: EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Image.network(
-              product['imageUrls'][0],
-              width: double.infinity,
-              height: 200,
-              fit: BoxFit.cover,
+            ClipRRect(
+              borderRadius: BorderRadius.circular(10.0),
+              child: Image.network(
+                product['imageUrls'][0],
+                width: double.infinity,
+                height: 200,
+                fit: BoxFit.cover,
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return Center(
+                    child: CircularProgressIndicator(
+                      value: loadingProgress.expectedTotalBytes != null
+                          ? loadingProgress.cumulativeBytesLoaded /
+                              loadingProgress.expectedTotalBytes!
+                          : null,
+                    ),
+                  );
+                },
+              ),
             ),
             SizedBox(height: 16),
-            Text("Product Name: ${product['productName']}",
-                style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold)),
+            Text(
+              "Product Name: ${product['productName']}",
+              style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
+            ),
             SizedBox(height: 8),
             _detail("Category: ${product['categoryName']}"),
             SizedBox(height: 8),
@@ -274,22 +312,24 @@ class ProductDetailPage extends StatelessWidget {
             SizedBox(height: 8),
             _detail("Gifting: ${product['giftingName']}"),
             SizedBox(height: 16),
-            _detail(
-                "Description: ${product['description'] ?? 'No description'}"),
+            _detail("Description: ${product['description'] ?? 'No description'}"),
             SizedBox(height: 40),
             Center(
               child: ElevatedButton(
-                  onPressed: () async {
-                    final shouldRefresh = await deleteProduct(
-                        context, product['productId'].toString());
-                    if (shouldRefresh) {
-                      Navigator.pop(context, true);
-                    }
-                  },
-                  child: Text(
-                    'Delete this product',
-                    style: TextStyle(color: Colors.red),
-                  )),
+                onPressed: () async {
+                  final shouldRefresh = await deleteProduct(
+                    context,
+                    product['productId'].toString(),
+                  );
+                  if (shouldRefresh) {
+                    Navigator.pop(context, true);
+                  }
+                },
+                child: Text(
+                  'Delete this product',
+                  style: TextStyle(color: Colors.red),
+                ),
+              ),
             ),
           ],
         ),
@@ -298,9 +338,9 @@ class ProductDetailPage extends StatelessWidget {
   }
 }
 
-Widget _detail(String detailtext) {
+Widget _detail(String detailText) {
   return Text(
-    detailtext,
+    detailText,
     style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
   );
 }
