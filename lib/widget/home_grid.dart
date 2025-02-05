@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gehnaorg/core/constants/constants.dart';
+import 'package:gehnaorg/features/add_product/data/models/category.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ProductGridPage extends StatefulWidget {
@@ -11,13 +12,13 @@ class ProductGridPage extends StatefulWidget {
 
 class _ProductGridPageState extends State<ProductGridPage> {
   List<dynamic> products = [];
-  List<String> categories = [];
-  String? selectedCategory;
   bool isLoading = false;
   bool hasMore = true;
   int page = 0;
   final int size = 10;
   int totalProducts = 0;
+  List<Category> categories = [];
+  String selectedCategory = "All"; // Default category
 
   final ScrollController _scrollController = ScrollController();
 
@@ -25,6 +26,7 @@ class _ProductGridPageState extends State<ProductGridPage> {
   void initState() {
     super.initState();
     fetchProducts();
+    fetchCategoriesList();
 
     _scrollController.addListener(() {
       if (_scrollController.position.pixels ==
@@ -38,36 +40,37 @@ class _ProductGridPageState extends State<ProductGridPage> {
 
   Future<void> fetchProducts() async {
     if (isLoading) return; // Prevent multiple simultaneous requests
-    
+
     setState(() {
       isLoading = true;
     });
-    
+
     final prefs = await SharedPreferences.getInstance();
     final wholesalerId = prefs.getInt('wholesalerId');
     if (wholesalerId == null) {
       throw Exception('wholesalerId not found in shared preferences');
     }
 
-    String url = "https://product-service-254137058023.asia-south1.run.app/product/$wholesalerId?page=$page&size=$size";
+    String url =
+        "https://product-service-254137058023.asia-south1.run.app/product/$wholesalerId?page=$page&size=$size";
 
+    // Agar "All" nahi hai toh categoryId add karo
+    if (selectedCategory != "All") {
+      url +=
+          "&categoryId=${categories.firstWhere((cat) => cat.categoryName == selectedCategory).categoryId}";
+    }
 
     final dio = Dio();
-    
+
     try {
       final response = await dio.get(url);
 
       if (response.data['status'] == 0) {
         final List<dynamic> newProducts = response.data['products'];
-        
 
         setState(() {
-          if (selectedCategory != null) {
-            products.addAll(newProducts.where(
-                (product) => product['categoryName'] == selectedCategory));
-          } else {
-            products.addAll(newProducts);
-          }
+          products.clear(); 
+          products.addAll(newProducts);
           page++;
           hasMore = newProducts.length == size;
           isLoading = false;
@@ -89,6 +92,66 @@ class _ProductGridPageState extends State<ProductGridPage> {
     }
   }
 
+  Future<List<Category>> fetchCategories({
+    required int layoutPosition,
+  }) async {
+    final dio = Dio(); 
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final wholesalerId = prefs.getInt('wholesalerId');
+      if (wholesalerId == null) {
+        throw Exception('wholesalerId not found in shared preferences');
+      }
+
+      // Make the API call with adminId
+      final response = await dio.get(
+        'https://upload-service-254137058023.asia-south1.run.app/upload/$wholesalerId/getCategory',
+        queryParameters: {
+          'layoutPosition': layoutPosition,
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return (response.data as List)
+            .map((e) => Category.fromJson(e))
+            .toList();
+      } else {
+        throw Exception(
+            'Failed to fetch categories: ${response.statusMessage}');
+      }
+    } catch (e) {
+      throw Exception('Error fetching categories: $e');
+    }
+  }
+
+  void fetchCategoriesList() async {
+    try {
+      List<Category> fetchedCategories =
+          await fetchCategories(layoutPosition: 1);
+      setState(() {
+        categories = fetchedCategories;
+        categories.insert(
+            0,
+            Category(
+              categoryId: 0,
+              categoryName: "All",
+              description: "",
+              price: 0,
+              exfield1: null,
+              exfield2: null,
+              createDate: DateTime.now(),
+              modiDate: DateTime.now(),
+              imageUrl: "",
+              wholesalerId: 0,
+              layoutPosition: 0,
+              wholesaler: "",
+            ));
+      });
+    } catch (e) {
+      print("Error: $e");
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -103,6 +166,28 @@ class _ProductGridPageState extends State<ProductGridPage> {
             color: kWhite,
           ),
         ),
+        actions: [
+          PopupMenuButton<Category>(
+            icon: Icon(Icons.more_vert, color: Colors.white),
+            onSelected: (Category category) {
+              setState(() {
+                selectedCategory = category.categoryName;
+                page = 0; 
+                hasMore = true;
+                products.clear(); 
+              });
+              fetchProducts(); 
+            },
+            itemBuilder: (BuildContext context) {
+              return categories.map((Category category) {
+                return PopupMenuItem<Category>(
+                  value: category,
+                  child: Text(category.categoryName),
+                );
+              }).toList();
+            },
+          ),
+        ],
         backgroundColor: kPrimary,
         elevation: 5,
       ),
@@ -169,13 +254,19 @@ class _ProductGridPageState extends State<ProductGridPage> {
                                         product['imageUrls'][0],
                                         fit: BoxFit.cover,
                                         width: double.infinity,
-                                        loadingBuilder: (context, child, loadingProgress) {
-                                          if (loadingProgress == null) return child;
+                                        loadingBuilder:
+                                            (context, child, loadingProgress) {
+                                          if (loadingProgress == null)
+                                            return child;
                                           return Center(
                                             child: CircularProgressIndicator(
-                                              value: loadingProgress.expectedTotalBytes != null
-                                                  ? loadingProgress.cumulativeBytesLoaded /
-                                                      loadingProgress.expectedTotalBytes!
+                                              value: loadingProgress
+                                                          .expectedTotalBytes !=
+                                                      null
+                                                  ? loadingProgress
+                                                          .cumulativeBytesLoaded /
+                                                      loadingProgress
+                                                          .expectedTotalBytes!
                                                   : null,
                                             ),
                                           );
@@ -190,7 +281,7 @@ class _ProductGridPageState extends State<ProductGridPage> {
                                       textAlign: TextAlign.center,
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
-                                        fontSize: 20,
+                                        fontSize: 15,
                                       ),
                                     ),
                                   ),
@@ -245,7 +336,8 @@ class ProductDetailPage extends StatelessWidget {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to delete product: ${response.data['message']}'),
+            content:
+                Text('Failed to delete product: ${response.data['message']}'),
           ),
         );
       }
@@ -312,7 +404,8 @@ class ProductDetailPage extends StatelessWidget {
             SizedBox(height: 8),
             _detail("Gifting: ${product['giftingName']}"),
             SizedBox(height: 16),
-            _detail("Description: ${product['description'] ?? 'No description'}"),
+            _detail(
+                "Description: ${product['description'] ?? 'No description'}"),
             SizedBox(height: 40),
             Center(
               child: ElevatedButton(

@@ -7,7 +7,7 @@ class CategoryRepository {
 
   CategoryRepository(this.dio);
 
-  Future<List<Category>> fetchCategories({
+   Future<List<Category>> fetchCategories({
     required int layoutPosition,
   }) async {
     try {
