@@ -69,7 +69,7 @@ class _ProductGridPageState extends State<ProductGridPage> {
         final List<dynamic> newProducts = response.data['products'];
 
         setState(() {
-          products.clear(); 
+        
           products.addAll(newProducts);
           page++;
           hasMore = newProducts.length == size;
