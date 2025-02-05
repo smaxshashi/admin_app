@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:gehnaorg/features/add_product/presentation/pages/home_page.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -11,7 +11,6 @@ import 'package:http_parser/http_parser.dart';
 import '../../../../core/constants/constants.dart';
 import '../../apis/light_category.dart';
 import '../../data/models/post.dart';
-import '../bloc/login_bloc.dart';
 
 class LightweightPage extends StatefulWidget {
   const LightweightPage({super.key});
@@ -108,6 +107,22 @@ class _LightweightPageState extends State<LightweightPage> {
   Future<void> _submitProduct() async {
     print("Starting product submission...");
 
+      // Show loading indicator
+  showDialog(
+    context: context,
+    barrierDismissible: false, // Prevent dismissing the dialog
+    builder: (context) {
+      return const AlertDialog(
+        content: Row(
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(width: 20),
+            Text("Uploading product..."),
+          ],
+        ),
+      );
+    },
+  );
     // Step 1: Validate form fields
     if (!_formKey.currentState!.validate()) {
       print("Form validation failed.");
@@ -253,17 +268,18 @@ print("Request files: ${request.files}");
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Product uploaded successfully!')),
       );
-      Navigator.pushReplacement(
-        context,
-        PageRouteBuilder(
-          pageBuilder: (context, animation, secondaryAnimation) =>
-              LightweightPage(),
-          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            return FadeTransition(opacity: animation, child: child);
-          },
-          transitionDuration: const Duration(milliseconds: 500),
-        ),
-      );
+     Navigator.pushAndRemoveUntil(
+  context,
+  PageRouteBuilder(
+    pageBuilder: (context, animation, secondaryAnimation) => HomePage(), // Yeh aapki main screen hogi
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      return FadeTransition(opacity: animation, child: child);
+    },
+    transitionDuration: const Duration(milliseconds: 500),
+  ),
+  (route) => false, // Purane sabhi screens hata dega
+);
+
     } else {
       print("Failed to upload product. Status code: ${response.statusCode}");
       String responseBody = await response.stream.bytesToString();
@@ -273,6 +289,7 @@ print("Request files: ${request.files}");
       );
     }
   } catch (e) {
+    Navigator.pop(context); // Hide loading dialog
     print("Error: $e");
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Error uploading product: $e')),

@@ -12,6 +12,7 @@ import 'package:gehnaorg/features/add_product/data/repositories/subcategory_repo
 import 'package:gehnaorg/features/add_product/presentation/bloc/add_product_bloc.dart';
 import 'package:gehnaorg/features/add_product/presentation/bloc/login_bloc.dart';
 import 'package:gehnaorg/features/add_product/presentation/bloc/subcategory_bloc/subcategory_bloc.dart';
+import 'package:gehnaorg/features/add_product/presentation/pages/home_page.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:image_picker/image_picker.dart';
@@ -159,8 +160,24 @@ class _AddProductPageState extends State<AddProductPage> {
 //
 //
 //
-  Future<void> _submitProduct() async {
+Future<void> _submitProduct() async {
     print("Starting product submission...");
+     // Show loading indicator
+  showDialog(
+    context: context,
+    barrierDismissible: false, // Prevent dismissing the dialog
+    builder: (context) {
+      return const AlertDialog(
+        content: Row(
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(width: 20),
+            Text("Uploading product..."),
+          ],
+        ),
+      );
+    },
+  );
 
     // Step 1: Validate form fields
     if (!_formKey.currentState!.validate()) {
@@ -186,6 +203,7 @@ class _AddProductPageState extends State<AddProductPage> {
       );
       return;
     }
+    
 
     // Step 5: Get Wholesaler ID from SharedPreferences
     final prefs = await SharedPreferences.getInstance();
@@ -303,18 +321,18 @@ class _AddProductPageState extends State<AddProductPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Product uploaded successfully!')),
         );
-        Navigator.pushReplacement(
-          context,
-          PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) =>
-                AddProductPage(),
-            transitionsBuilder:
-                (context, animation, secondaryAnimation, child) {
-              return FadeTransition(opacity: animation, child: child);
-            },
-            transitionDuration: const Duration(milliseconds: 500),
-          ),
-        );
+     Navigator.pushAndRemoveUntil(
+  context,
+  PageRouteBuilder(
+    pageBuilder: (context, animation, secondaryAnimation) => HomePage(), // Yeh aapki main screen hogi
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      return FadeTransition(opacity: animation, child: child);
+    },
+    transitionDuration: const Duration(milliseconds: 500),
+  ),
+  (route) => false, // Purane sabhi screens hata dega
+);
+
       } else {
         print("Failed to upload product. Status code: ${response.statusCode}");
         String responseBody = await response.stream.bytesToString();
@@ -324,6 +342,7 @@ class _AddProductPageState extends State<AddProductPage> {
         );
       }
     } catch (e) {
+       Navigator.pop(context); // Hide loading dialog
       print("Error: $e");
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error uploading product: $e')),
