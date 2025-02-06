@@ -2,7 +2,6 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:gehnaorg/features/add_product/data/models/login.dart';
 import 'package:gehnaorg/features/add_product/presentation/bloc/login_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 

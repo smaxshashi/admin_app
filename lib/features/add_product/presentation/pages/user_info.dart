@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../core/constants/constants.dart';
@@ -18,13 +19,13 @@ class _UserInfoState extends State<UserInfo> {
   bool _isLoading = true;
   String _errorMessage = "";
 
-  // Fetch user responses from the API
- Future<void> _fetchUserResponses() async {
-  final dio = Dio();
-  const String url = 'https://user-service-254137058023.asia-south1.run.app/user/wholesaler/cart';
+  Future<void> _fetchUserResponses() async {
+    final dio = Dio();
+    const String url =
+        'https://user-service-254137058023.asia-south1.run.app/user/wholesaler/cart';
 
-  try {
-final prefs = await SharedPreferences.getInstance();
+    try {
+      final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('token');
 
       final response = await dio.get(
@@ -38,45 +39,48 @@ final prefs = await SharedPreferences.getInstance();
 
       setState(() {
         if (response.statusCode == 204) {
-          // No Content
           _userResponses = [];
-          _errorMessage = ""; // Clear any previous error messages
+          _errorMessage = "";
         } else {
-          _userResponses = response.data; // Assuming response is a JSON array
-          _errorMessage = ""; // Clear any previous error messages
+          _userResponses = response.data;
+          _errorMessage = "";
         }
         _isLoading = false;
       });
-    
-  } on DioException catch (e) {
-    setState(() {
-      _errorMessage = 'Error: ${e.message}';
-      _isLoading = false;
-    });
+    } on DioException catch (e) {
+      setState(() {
+        _errorMessage = 'Error: ${e.message}';
+        _isLoading = false;
+      });
+    }
   }
-}
 
   Future<Map<String, dynamic>?> _fetchUserDetail(String userId) async {
     final dio = Dio();
-    final String url = "https://user-service-254137058023.asia-south1.run.app/user/$userId";
 
     try {
-      final loginState = context.read<LoginBloc>().state;
-      if (loginState is LoginSuccess) {
-        
+      final prefs = await SharedPreferences.getInstance();
+      final wholesalerId = prefs.getInt('wholesalerId')?.toString();
 
-        final response = await dio.get(
-          url,
-          
-        );
+      if (wholesalerId == null) {
+        print("Wholesaler ID not found in SharedPreferences.");
+        return null;
+      }
 
-        if (response.statusCode == 200) {
-          return response.data; // Assuming this returns the user details
-        } else {
-          print("Error: ${response.statusCode} - ${response.statusMessage}");
-        }
+      final String url =
+          "https://user-service-254137058023.asia-south1.run.app/user/$userId?wholesalerId=$wholesalerId";
+
+      print("Fetching user details from: $url");
+
+      final response = await dio.get(url);
+
+      print("Response status code: ${response.statusCode}");
+      print("Response data: ${response.data}");
+
+      if (response.statusCode == 200) {
+        return response.data; // Assuming this returns the user details
       } else {
-        print("User not logged in or invalid login state.");
+        print("Error: ${response.statusCode} - ${response.statusMessage}");
       }
     } catch (e) {
       print("Error fetching user detail: $e");
@@ -114,166 +118,82 @@ final prefs = await SharedPreferences.getInstance();
                       itemCount: _userResponses.length,
                       itemBuilder: (context, index) {
                         final response = _userResponses[index];
-                        final product = response['product'];
                         final userId = response['userId'].toString();
+                        final List<dynamic> products =
+                            response['finalProductList'];
 
                         return Card(
                           margin: const EdgeInsets.symmetric(
                               vertical: 8, horizontal: 16),
                           elevation: 5,
+                          shadowColor: Colors.blueGrey,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+                              borderRadius: BorderRadius.circular(12)),
                           child: Padding(
                             padding: const EdgeInsets.all(16.0),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                if (response['name'] != null)
-                                  Text(
-                                    'Name: ${response['name']}',
-                                    style: const TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                                Text(
+                                  'Name: ${response['name'] ?? 'N/A'}',
+                                  style: GoogleFonts.roboto(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black87,
                                   ),
-                                if (response['mobileNumber'] != null)
-                                  Text(
-                                    'Mobile: ${response['mobileNumber']}',
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      color: Colors.black87,
-                                    ),
+                                ),
+                                Text(
+                                  'Mobile No: ${response['mobileNumber'] ?? 'N/A'}',
+                                  style: GoogleFonts.roboto(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black87,
                                   ),
-                                const SizedBox(height: 8),
-                                if (product != null) ...[
-                                  if (product['productName'] != null)
-                                    Text(
-                                      'Product: ${product['productName']}',
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        color: Colors.black87,
+                                ),
+                                const SizedBox(height: 12),
+
+                                // Row for Buttons
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.start,
+                                  children: [
+                                   
+                                    // View More Details Button (Always visible)
+                                    ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: kPrimary,
                                       ),
+                                      onPressed: () async {
+                                        final userDetails =
+                                            await _fetchUserDetail(userId);
+                                        if (userDetails != null) {
+                                          _showUserDetailsDialog(
+                                              context, userDetails);
+                                        } else {
+                                          print('User details not found');
+                                        }
+                                      },
+                                      child: const Text("View More Detail",
+                                          style:
+                                              TextStyle(color: Colors.white)),
                                     ),
-                                  if (product['categoryName'] != null)
-                                    Text(
-                                      'Category: ${product['categoryName']}',
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        color: Colors.black87,
-                                      ),
-                                    ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'Weight: ${product['weight'] ?? 'N/A'}g',
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      color: Colors.black87,
-                                    ),
-                                  ),
-                                  Text(
-                                    'Karat: ${product['karat'] ?? 'N/A'}',
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      color: Colors.black87,
-                                    ),
-                                  ),
-                                ] else
-                                  const Text(
-                                    'No product information available',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      color: Colors.red,
-                                    ),
-                                  ),
-                                const SizedBox(height: 8),
-                                ElevatedButton(
-                                  style: ElevatedButton.styleFrom(
-                                      backgroundColor: kPrimary),
-                                  onPressed: () async {
-                                    final userDetails =
-                                        await _fetchUserDetail(userId);
-                                    if (userDetails != null) {
-                                      showDialog(
-                                        context: context,
-                                        builder: (context) {
-                                          return AlertDialog(
-                                            backgroundColor: k2,
-                                            title: Center(
-                                              child: Text(userDetails['name'] ??
-                                                  "User Details",style: TextStyle(color: kGray,fontWeight: FontWeight.bold,fontSize: 20,),),
-                                            ),
-                                            content: SingleChildScrollView(
-                                              child: Column(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                children: [
-                                                  if (userDetails['email'] !=
-                                                      null)
-                                                    _details(
-                                                        "Email: ${userDetails['email']}"),
-                                                  if (userDetails[
-                                                          'dateOfBirth'] !=
-                                                      null)
-                                                    _details(
-                                                        "DOB: ${userDetails['dateOfBirth']}"),
-                                                  if (userDetails[
-                                                          'spouseDob'] !=
-                                                      null)
-                                                    _details(
-                                                        "Spouse Date: ${userDetails['spouseDob']}"),
-                                                  if (userDetails['address'] !=
-                                                      null)
-                                                    _details(
-                                                        "Address: ${userDetails['address']}"),
-                                                  if (userDetails['pincode'] !=
-                                                      null)
-                                                    _details(
-                                                        "Pincode: ${userDetails['pincode']}"),
-                                                  if (userDetails[
-                                                          'anniversary'] !=
-                                                      null)
-                                                    _details(
-                                                        "Anniversary: ${userDetails['anniversary']}"),
-                                                        SizedBox(
-                                                          height: 20,
-                                                        ),
-                                                  if (userDetails['image'] !=
-                                                      null)
-                                                    Center(
-                                                      child: Container(
-                                                      height: 200,
-                                                        child: Image.network(
-                                                            userDetails['image']),
-                                                      ),
-                                                    ),
-                                                ],
-                                              ),
-                                            ),
-                                            actions: [
-                                              TextButton(
-                                                onPressed: () =>
-                                                    Navigator.pop(context),
-                                                child: const Text(
-                                                  "Close",
-                                                  style: TextStyle(
-                                                     fontSize: 20,
-                                                     fontWeight: FontWeight.bold,
-                                                      color: kPrimary),
-                                                ),
-                                              ),
-                                            ],
-                                          );
+                                    SizedBox(width: 8),
+                                     if (products
+                                        .isNotEmpty) // Show Products Button (Only if cart has products)
+                                      ElevatedButton(
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: kPrimary,
+                                        ),
+                                        onPressed: () {
+                                          _showProductsDialog(
+                                              context, products);
                                         },
-                                      );
-                                    } else {
-                                      print('userId not found');
-                                    }
-                                  },
-                                  child: const Text(
-                                    "View More Detail",
-                                    style: TextStyle(color: kWhite),
-                                  ),
+                                        child: const Text(
+                                            "Show Products Added in Cart",
+                                            style:
+                                                TextStyle(color: Colors.white)),
+                                      ),
+                                    
+                                  ],
                                 ),
                               ],
                             ),
@@ -290,8 +210,117 @@ Widget _details(String text) {
     text,
     style: TextStyle(
       fontSize: 18,
-      color: kDark,
+      color: Colors.black87,
       fontWeight: FontWeight.w500,
     ),
+  );
+}
+
+void _showProductsDialog(BuildContext context, List<dynamic> products) {
+  showDialog(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        title: const Text("Products in Cart",style: TextStyle(decoration: TextDecoration.underline),),
+        
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: products.map((product) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text("Product Name: ${product['productName'] ?? 'N/A'}",
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold)),
+                    Text('Category: ${product['categoryName'] ?? 'N/A'}',
+                        style: const TextStyle(
+                            fontSize: 16, color: Colors.black87)),
+                    if (product['subCategoryName'] != null)
+                      Text('Sub Category: ${product['subCategoryName']}',
+                          style: const TextStyle(
+                              fontSize: 16, color: Colors.black87)),
+                    Text("Wastage: ${product['wastage'] ?? 'N/A'}",
+                        style: const TextStyle(
+                            fontSize: 16, color: Colors.black87)),
+                    Text('Weight: ${product['weight'] ?? 'N/A'}g',
+                        style: const TextStyle(
+                            fontSize: 16, color: Colors.black87)),
+                    Text('Karat: ${product['karat'] ?? 'N/A'}',
+                        style: const TextStyle(
+                            fontSize: 16, color: Colors.black87)),
+                    if (product['gender'] != null)
+                      Text('Gender: ${product['gender']}',
+                          style: const TextStyle(
+                              fontSize: 16, color: Colors.black87)),
+                    SizedBox(height: 8),
+                    if (product['imageUrls'] != null &&
+                        product['imageUrls'].isNotEmpty)
+                      Center(child: Image.network(product['imageUrls'][0], height: 100)),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Close",
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: kPrimary)),
+          ),
+        ],
+      );
+    },
+  );
+}
+
+void _showUserDetailsDialog(
+    BuildContext context, Map<String, dynamic> userDetails) {
+  showDialog(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+       
+        title: Center(
+          child: Text(
+            userDetails['name'] ?? "User Details",
+            style: const TextStyle(
+                color: Colors.black, fontWeight: FontWeight.bold, fontSize: 20),
+          ),
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (userDetails['email'] != null)
+                _details("Email: ${userDetails['email']}"),
+              if (userDetails['dateOfBirth'] != null)
+                _details("DOB: ${userDetails['dateOfBirth']}"),
+              if (userDetails['spouseDob'] != null)
+                _details("Spouse DOB: ${userDetails['spouseDob']}"),
+              if (userDetails['address'] != null)
+                _details("Address: ${userDetails['address']}"),
+              if (userDetails['pincode'] != null)
+                _details("Pincode: ${userDetails['pincode']}"),
+              if (userDetails['anniversary'] != null)
+                _details("Anniversary: ${userDetails['anniversary']}"),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Close",
+                style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: kPrimary)),
+          ),
+        ],
+      );
+    },
   );
 }
