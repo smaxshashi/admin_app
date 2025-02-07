@@ -371,7 +371,7 @@ Future<void> _submitProduct() async {
       child: Scaffold(
         appBar: AppBar(
           title: const Text(
-            'Add Product',
+            'Add Products',
             style: TextStyle(
                 fontSize: 24, fontWeight: FontWeight.bold, color: kWhite),
           ),

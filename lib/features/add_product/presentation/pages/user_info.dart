@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shimmer/shimmer.dart';
 
 import '../../../../core/constants/constants.dart';
 import '../bloc/login_bloc.dart';
@@ -109,7 +110,7 @@ class _UserInfoState extends State<UserInfo> {
         elevation: 5,
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? _buildShimmerList()
           : _errorMessage.isNotEmpty
               ? Center(child: Text(_errorMessage))
               : _userResponses.isEmpty
@@ -136,25 +137,27 @@ class _UserInfoState extends State<UserInfo> {
                               children: [
                                 Text(
                                   'Name: ${response['name'] ?? 'N/A'}',
-                                  style: GoogleFonts.roboto(
-                                    fontSize: 20,
+                                  style: GoogleFonts.calistoga(
+                                    fontSize: 16,
                                     fontWeight: FontWeight.bold,
                                     color: Colors.black87,
+                                    
                                   ),
                                 ),
                                 Text(
                                   'Mobile No: ${response['mobileNumber'] ?? 'N/A'}',
-                                  style: GoogleFonts.roboto(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
+                                  style: GoogleFonts.calistoga(
+                                    fontSize: 16,
+                                    
                                     color: Colors.black87,
                                   ),
                                 ),
                                 const SizedBox(height: 12),
 
                                 // Row for Buttons
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.start,
+                                Column(
+                                  
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                    
                                     // View More Details Button (Always visible)
@@ -204,6 +207,50 @@ class _UserInfoState extends State<UserInfo> {
     );
   }
 }
+Widget _buildShimmerList() {
+  return ListView.builder(
+    itemCount: 5, // Shimmer ke liye 5 items dikhayenge
+    itemBuilder: (context, index) {
+      return Card(
+        margin: EdgeInsets.all(8.0),
+        child: Padding(
+          padding: EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildShimmerBox(height: 20, width: 150), // Name
+              SizedBox(height: 10),
+              _buildShimmerBox(height: 20, width: 200), // Phone Number
+              SizedBox(height: 10),
+              _buildShimmerBox(height: 20, width: 250), // Email
+              SizedBox(height: 10),
+              _buildShimmerBox(height: 20, width: 300), // Address
+               SizedBox(height: 10),
+              _buildShimmerBox(height: 20, width: 300), // Address
+              
+              
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
+Widget _buildShimmerBox({required double height, required double width}) {
+  return Shimmer.fromColors(
+    baseColor: Colors.grey[300]!,
+    highlightColor: Colors.grey[100]!,
+    child: Container(
+      height: height,
+      width: width,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+      ),
+    ),
+  );
+}
 
 Widget _details(String text) {
   return Text(
@@ -221,7 +268,7 @@ void _showProductsDialog(BuildContext context, List<dynamic> products) {
     context: context,
     builder: (context) {
       return AlertDialog(
-        title: const Text("Products in Cart",style: TextStyle(decoration: TextDecoration.underline),),
+        title:  Text("Products in Cart",style: GoogleFonts.calistoga(decoration: TextDecoration.underline), ),
         
         content: SingleChildScrollView(
           child: Column(
@@ -297,6 +344,8 @@ void _showUserDetailsDialog(
             children: [
               if (userDetails['email'] != null)
                 _details("Email: ${userDetails['email']}"),
+              if (userDetails['gender'] != null)
+               _details("Gender: ${userDetails['gender']}"),
               if (userDetails['dateOfBirth'] != null)
                 _details("DOB: ${userDetails['dateOfBirth']}"),
               if (userDetails['spouseDob'] != null)
@@ -307,6 +356,9 @@ void _showUserDetailsDialog(
                 _details("Pincode: ${userDetails['pincode']}"),
               if (userDetails['anniversary'] != null)
                 _details("Anniversary: ${userDetails['anniversary']}"),
+              if (userDetails['image'] != null)
+                Center(child: Image.network(userDetails['image'], height: 100)),
+              
             ],
           ),
         ),

@@ -303,10 +303,11 @@ print("Request files: ${request.files}");
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          'Add Product',
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          'Add Light Products',
+          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: kWhite),
         ),
         centerTitle: true,
+        backgroundColor: kPrimary,
       ),
       body: Padding(
         padding: const EdgeInsets.all(12),

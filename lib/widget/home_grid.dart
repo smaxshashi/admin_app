@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gehnaorg/core/constants/constants.dart';
 import 'package:gehnaorg/features/add_product/data/models/category.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shimmer/shimmer.dart';
 
 class ProductGridPage extends StatefulWidget {
   @override
@@ -192,7 +193,7 @@ class _ProductGridPageState extends State<ProductGridPage> {
         elevation: 5,
       ),
       body: products.isEmpty && isLoading
-          ? Center(child: CircularProgressIndicator())
+          ? _buildShimmerGrid()
           : products.isEmpty
               ? Center(
                   child: Text(
@@ -435,5 +436,50 @@ Widget _detail(String detailText) {
   return Text(
     detailText,
     style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+  );
+}
+Widget _buildShimmerGrid() {
+  return GridView.builder(
+    padding: EdgeInsets.all(8.0),
+    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+      crossAxisCount: 2, // 2 columns in the grid
+      crossAxisSpacing: 8.0,
+      mainAxisSpacing: 8.0,
+      childAspectRatio: 0.8,
+    ),
+    itemCount: 6, // Shimmer ke liye 6 empty items
+    itemBuilder: (context, index) {
+      return Shimmer.fromColors(
+        baseColor: Colors.grey[300]!,
+        highlightColor: Colors.grey[100]!,
+        child: Card(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10.0),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius:
+                        BorderRadius.vertical(top: Radius.circular(10.0)),
+                  ),
+                ),
+              ),
+              SizedBox(height: 8),
+              Container(
+                height: 15,
+                width: 100,
+                color: Colors.white,
+              ),
+              SizedBox(height: 8),
+            ],
+          ),
+        ),
+      );
+    },
   );
 }

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:gehnaorg/features/add_product/presentation/pages/login_page.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shimmer/shimmer.dart';
 
 import '../../../../core/constants/constants.dart';
 import '../../apis/profile.dart';
@@ -47,49 +49,96 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
         ],
       ),
-      body: token == null
-          ? Center(child: CircularProgressIndicator()) // Token load hone tak loader dikhayenge
-          : FutureBuilder<List<User>>(
-              future: fetchUsers(token!),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Center(child: CircularProgressIndicator());
-                } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return Center(child: Text('No user data available'));
-                }
+    body: token == null
+    ? Center(child: CircularProgressIndicator())
+    : FutureBuilder<List<User>>(
+        future: fetchUsers(token!),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return _buildShimmerList();
+          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return Center(child: Text('No user data available'));
+          }
 
-                final users = snapshot.data!;
-                return ListView.builder(
-                  itemCount: users.length,
-                  itemBuilder: (context, index) {
-                    final user = users[index];
-                    return Card(
-                      margin: EdgeInsets.all(8.0),
-                      child: Padding(
-                        padding: EdgeInsets.all(16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Name: ${user.name ?? 'null'}'),
-                            Text('Phone Number: ${user.phoneNumber ?? 'null'}'),
-                            Text('Email: ${user.email ?? 'null'}'),
-                            Text('Address: ${user.address ?? 'null'}'),
-                            Text('Pincode: ${user.pincode ?? 'null'}'),
-                            Text('Gender: ${user.gender ?? 'null'}'),
-                            Text('Date of Birth: ${user.dateOfBirth ?? 'null'}'),
-                            Text('Spouse Date of Birth: ${user.spouseDateOfBirth ?? 'null'}'),
-                            Text('Anniversary: ${user.anniversary ?? 'null'}'),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
+          final users = snapshot.data!;
+          return ListView.builder(
+            itemCount: users.length,
+            itemBuilder: (context, index) {
+              final user = users[index];
+              return Card(
+                margin: EdgeInsets.all(8.0),
+                child: Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _details("Name: ${user.name ?? 'null'}"),
+                      _details('Phone Number: ${user.phoneNumber ?? 'null'}'),
+                      _details('Email: ${user.email ?? 'null'}'),
+                      _details('Address: ${user.address ?? 'null'}'),
+                      _details('Pincode: ${user.pincode ?? 'null'}'),
+                      _details('Gender: ${user.gender ?? 'null'}'),
+                      _details('Date of Birth: ${user.dateOfBirth ?? 'null'}'),
+                      _details('Spouse Date of Birth: ${user.spouseDateOfBirth ?? 'null'}'),
+                      _details('Anniversary: ${user.anniversary ?? 'null'}'),
+                    ],
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      ),
+
     );
   }
 }
+Widget _buildShimmerList() {
+  return ListView.builder(
+    itemCount: 5, // Shimmer ke liye 5 items dikhayenge
+    itemBuilder: (context, index) {
+      return Card(
+        margin: EdgeInsets.all(8.0),
+        child: Padding(
+          padding: EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildShimmerBox(height: 20, width: 150), // Name
+              SizedBox(height: 10),
+              _buildShimmerBox(height: 20, width: 200), // Phone Number
+              SizedBox(height: 10),
+              _buildShimmerBox(height: 20, width: 250), // Email
+              SizedBox(height: 10),
+              _buildShimmerBox(height: 20, width: 300), // Address
+               SizedBox(height: 10),
+              _buildShimmerBox(height: 20, width: 300), // Address
+               SizedBox(height: 10),
+              _buildShimmerBox(height: 20, width: 300), // Address
+              
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
+Widget _buildShimmerBox({required double height, required double width}) {
+  return Shimmer.fromColors(
+    baseColor: Colors.grey[300]!,
+    highlightColor: Colors.grey[100]!,
+    child: Container(
+      height: height,
+      width: width,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+      ),
+    ),
+  );
+}
+
 
 Future<void> logout(BuildContext context) async {
   final prefs = await SharedPreferences.getInstance();
@@ -99,5 +148,16 @@ Future<void> logout(BuildContext context) async {
   Navigator.pushReplacement(
     context,
     MaterialPageRoute(builder: (context) => LoginPage()),
+  );
+}
+
+Widget _details(String text) {
+  return Text(
+    text,
+    style: GoogleFonts.calistoga(
+      fontSize: 15,
+    
+      color: Colors.black87,
+    ),
   );
 }
