@@ -720,7 +720,7 @@ Future<void> _submitProduct() async {
                             _selectedKarat = value;
                           });
                         },
-                        items: ['18K', '22K', '24K']
+                        items: ['14K','18K', '22K', '24K']
                             .map((karat) => DropdownMenuItem<String>(
                                   value: karat,
                                   child: Text(karat),
