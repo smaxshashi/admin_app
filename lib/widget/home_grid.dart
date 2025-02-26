@@ -442,7 +442,7 @@ Widget _buildShimmerGrid() {
   return GridView.builder(
     padding: EdgeInsets.all(8.0),
     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-      crossAxisCount: 2, // 2 columns in the grid
+      crossAxisCount: 2, // 
       crossAxisSpacing: 8.0,
       mainAxisSpacing: 8.0,
       childAspectRatio: 0.8,
