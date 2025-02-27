@@ -235,7 +235,7 @@ class _EditProductPageState extends State<EditProductPage> {
                         ),
                       ),
                       SizedBox(height: 10),
-                      Container(
+                      SizedBox(
                         height: 100,
                         child: ListView.builder(
                           scrollDirection: Axis.horizontal,
@@ -290,7 +290,7 @@ class _EditProductPageState extends State<EditProductPage> {
                     ),
                     if (_selectedImages.isNotEmpty) ...[
                       SizedBox(height: 10),
-                      Container(
+                      SizedBox(
                         height: 100,
                         child: ListView.builder(
                           scrollDirection: Axis.horizontal,
