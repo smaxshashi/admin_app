@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gehnaorg/core/constants/constants.dart';
 import 'package:gehnaorg/features/add_product/data/models/category.dart';
+import 'package:gehnaorg/widget/edit_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shimmer/shimmer.dart';
 
@@ -48,6 +49,7 @@ class _ProductGridPageState extends State<ProductGridPage> {
 
     final prefs = await SharedPreferences.getInstance();
     final wholesalerId = prefs.getInt('wholesalerId');
+
     if (wholesalerId == null) {
       throw Exception('wholesalerId not found in shared preferences');
     }
@@ -70,7 +72,6 @@ class _ProductGridPageState extends State<ProductGridPage> {
         final List<dynamic> newProducts = response.data['products'];
 
         setState(() {
-        
           products.addAll(newProducts);
           page++;
           hasMore = newProducts.length == size;
@@ -96,7 +97,7 @@ class _ProductGridPageState extends State<ProductGridPage> {
   Future<List<Category>> fetchCategories({
     required int layoutPosition,
   }) async {
-    final dio = Dio(); 
+    final dio = Dio();
     try {
       final prefs = await SharedPreferences.getInstance();
       final wholesalerId = prefs.getInt('wholesalerId');
@@ -173,11 +174,11 @@ class _ProductGridPageState extends State<ProductGridPage> {
             onSelected: (Category category) {
               setState(() {
                 selectedCategory = category.categoryName;
-                page = 0; 
+                page = 0;
                 hasMore = true;
-                products.clear(); 
+                products.clear();
               });
-              fetchProducts(); 
+              fetchProducts();
             },
             itemBuilder: (BuildContext context) {
               return categories.map((Category category) {
@@ -357,8 +358,27 @@ class ProductDetailPage extends StatelessWidget {
       appBar: AppBar(
         title: Text(
           product['productName'] ?? "Product Details",
-          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          style: TextStyle(
+              fontSize: 22, fontWeight: FontWeight.bold, color: kWhite),
         ),
+        actions: [
+          IconButton(
+            onPressed: () async {
+              final shouldRefresh = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => EditProductPage(product: product),
+                ),
+              );
+
+              if (shouldRefresh == true) {
+                Navigator.pop(context, true);
+              }
+            },
+            icon: Icon(Icons.edit, color: kWhite),
+          ),
+        ],
+        backgroundColor: kPrimary,
       ),
       body: SingleChildScrollView(
         padding: EdgeInsets.all(16.0),
@@ -438,11 +458,12 @@ Widget _detail(String detailText) {
     style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
   );
 }
+
 Widget _buildShimmerGrid() {
   return GridView.builder(
     padding: EdgeInsets.all(8.0),
     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-      crossAxisCount: 2, // 
+      crossAxisCount: 2, //
       crossAxisSpacing: 8.0,
       mainAxisSpacing: 8.0,
       childAspectRatio: 0.8,
